@@ -41,56 +41,46 @@ class ReActAgent:
             desc = func['description']
             params = func.get('parameters', {}).get('properties', {})
             param_str = ", ".join([f'"{k}": <{v.get("type", "string")}>' for k, v in params.items()])
-            tool_descriptions.append(f"- {name}: {desc}\n  Parameters: {{{param_str}}}")
+            tool_descriptions.append(f"- {name}: {desc}\n  Params: {{{param_str}}}")
         
         tool_lines = "\n".join(tool_descriptions)
         
-        return f"""You are a helpful AI assistant that uses the ReAct framework to solve tasks.
+        return f"""You are an AI agent with Python/Docker environment.
 
-AVAILABLE TOOLS:
+TOOLS:
 {tool_lines}
 
-FORMAT (follow EXACTLY):
-Thought: <your reasoning>
-Action: tool_name({{"param_name": "param_value"}})
+FORMAT (strict):
+Thought: <brief reasoning>
+Action: tool_name({{"param": "value"}})
 
-After receiving an Observation, continue with another Thought/Action or finish with:
-Thought: <final reasoning>
-Action: Final Answer: <your complete answer>
+End with:
+Action: Final Answer: <summary with file paths>
 
-TOOL SELECTION GUIDE:
-- To CREATE or MODIFY files: use write_file (NOT execute_command with echo)
-- To RUN commands (python, pip, git, etc): use execute_command
-- To READ files: use read_file
-- To LIST directory contents: use list_directory
+CRITICAL RULES:
+1. ONE action per response. Wait for Observation.
+2. USE YOUR KNOWLEDGE directly for content (articles, reports, data). DON'T search unless you truly need current info.
+3. For documents/articles: Write content directly with write_file. You know enough!
+4. For charts: Write a Python script with matplotlib, then execute it.
+5. For PDFs: Use reportlab (pip install reportlab first).
+6. NEVER repeat the same action twice.
+7. Be EFFICIENT - minimize iterations.
 
-EXAMPLES:
+DOCUMENT STRATEGY (3+ pages):
+1. Write intro section -> write_file("sections/01_intro.md", content)
+2. Write each section similarly (02, 03...)
+3. Create Python script to combine sections + generate charts
+4. Generate final PDF
 
-Example 1 - Create a Python file:
-Thought: I need to create a Python file that prints Hello World. I'll use write_file.
-Action: write_file({{"file_path": "hello.py", "content": "print('Hello World')"}})
+CHARTS EXAMPLE (matplotlib):
+```python
+import matplotlib.pyplot as plt
+data = {{"2025": 50, "2026": 75}}
+plt.bar(data.keys(), data.values())
+plt.savefig("chart.png")
+```
 
-Example 2 - Run Python script:
-Thought: I need to run the Python script I created.
-Action: execute_command({{"command": "python hello.py"}})
-
-Example 3 - Install a package:
-Thought: I need to install the requests library.
-Action: execute_command({{"command": "pip install requests"}})
-
-Example 4 - Final answer:
-Thought: I have completed the task successfully.
-Action: Final Answer: I created the file hello.py with a Hello World program.
-
-RULES:
-1. ALWAYS use write_file to create or modify files (never use echo > file)
-2. ALWAYS use the exact JSON format for tool parameters
-3. One action per response
-4. Wait for Observation before next action
-5. If an action fails, try a DIFFERENT approach (don't repeat the same action)
-6. NEVER repeat the same action twice - if you already did something, move on
-7. After completing a task successfully, IMMEDIATELY give a Final Answer
-8. If the user asks to "show" or "give" a file, use read_file to display its content"""
+Remember: You have extensive knowledge. Create content directly!"""
 
     def _parse_action(
         self, response: str

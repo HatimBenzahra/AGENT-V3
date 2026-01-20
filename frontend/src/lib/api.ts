@@ -48,3 +48,11 @@ export function getWebSocketUrl(sessionId?: string): string {
   const wsBase = API_BASE.replace('http://', 'ws://').replace('https://', 'wss://');
   return sessionId ? `${wsBase}/api/ws/${sessionId}` : `${wsBase}/api/ws`;
 }
+
+export function getDownloadUrl(sessionId: string, path: string): string {
+  return `${API_BASE}/api/files/${sessionId}/download?path=${encodeURIComponent(path)}`;
+}
+
+export function getFilePreviewUrl(sessionId: string, path: string): string {
+  return `${API_BASE}/api/files/${sessionId}/download?path=${encodeURIComponent(path)}`;
+}

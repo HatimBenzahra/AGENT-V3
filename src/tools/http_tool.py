@@ -111,10 +111,10 @@ class HttpClientTool(Tool):
                 content_type = response.headers.get("content-type", "")
                 content = response.text
 
-                # Truncate very long responses
-                max_length = 10000
+                # Truncate to save tokens
+                max_length = 4000
                 if len(content) > max_length:
-                    content = content[:max_length] + f"\n\n... [Truncated, {len(response.text)} total characters]"
+                    content = content[:max_length] + f"\n\n... [Truncated]"
 
                 result_parts.append("Content:")
                 result_parts.append(content)
@@ -208,10 +208,10 @@ class FetchWebPageTool(Tool):
                 text = re.sub(r'\s+', ' ', text)
                 text = text.strip()
 
-                # Truncate if too long
-                max_length = 15000
+                # Truncate to save tokens (4000 chars is enough for most use cases)
+                max_length = 4000
                 if len(text) > max_length:
-                    text = text[:max_length] + f"\n\n... [Truncated, {len(text)} total characters]"
+                    text = text[:max_length] + f"\n\n... [Truncated, {len(text)} total chars]"
 
                 return f"Content from: {url}\n\n{text}"
 

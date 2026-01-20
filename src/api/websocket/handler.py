@@ -22,6 +22,7 @@ from src.tools.file_tools import (
 )
 from src.tools.http_tool import FetchWebPageTool, HttpClientTool
 from src.tools.output_tool import ListOutputsTool, SaveOutputTool
+from src.tools.pdf_tool import CreatePDFTool
 from src.tools.registry import ToolRegistry
 from src.tools.terminal_tool import TerminalTool
 from src.tools.web_search_tool import WebNewsSearchTool, WebSearchTool
@@ -87,6 +88,10 @@ async def create_session_with_tools(session_id: Optional[str] = None) -> tuple[S
         conversation_context=session.context,
     ))
     registry.register(DeleteFileTool(
+        execution_context=session.docker_context,
+        conversation_context=session.context,
+    ))
+    registry.register(CreatePDFTool(
         execution_context=session.docker_context,
         conversation_context=session.context,
     ))

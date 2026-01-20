@@ -7,18 +7,19 @@ load_dotenv()
 
 
 class Config:
-    # LLM settings (Ollama)
+    # LLM Provider: "openrouter" or "ollama"
+    LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openrouter")
+    
+    # OpenRouter settings
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324")
+    
+    # Ollama settings (fallback)
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://100.68.221.26:11434")
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:32b")
     
-    # Model selection - different models for different tasks
-    OLLAMA_MODEL_FAST = os.getenv("OLLAMA_MODEL_FAST", "mistral:latest")  # Fast for simple tasks
-    OLLAMA_MODEL_CODE = os.getenv("OLLAMA_MODEL_CODE", "qwen3-coder:30b")  # Specialized for code generation
-    OLLAMA_MODEL_GENERAL = os.getenv("OLLAMA_MODEL_GENERAL", "qwen3:32b")  # General reasoning
-    
-    # Default model - using GENERAL for better reasoning (slower but more reliable)
-    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", OLLAMA_MODEL_GENERAL)
-    
-    MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "20"))
+    MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "100"))  # High for long documents
 
     # Docker workspace settings
     WORKSPACE_BASE_DIR = Path(os.getenv("WORKSPACE_DIR", "./workspace"))

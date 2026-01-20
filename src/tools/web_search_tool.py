@@ -49,12 +49,12 @@ class WebSearchTool(Tool):
             "required": ["query"],
         }
 
-    async def execute(self, query: str, max_results: int = 5) -> str:
+    async def execute(self, query: str, max_results: int = 3) -> str:
         """Execute web search.
 
         Args:
             query: Search query.
-            max_results: Maximum number of results (default: 5).
+            max_results: Maximum number of results (default: 3).
 
         Returns:
             Formatted search results.
@@ -62,16 +62,17 @@ class WebSearchTool(Tool):
         try:
             from duckduckgo_search import DDGS
 
-            # Limit max_results to prevent abuse
-            max_results = min(max_results, 10)
+            # Limit max_results to save tokens
+            max_results = min(max_results, 5)
 
             results: List[Dict[str, str]] = []
             with DDGS() as ddgs:
                 for r in ddgs.text(query, max_results=max_results):
+                    snippet = r.get("body", "")[:150]  # Truncate snippets
                     results.append({
                         "title": r.get("title", ""),
                         "url": r.get("href", ""),
-                        "snippet": r.get("body", ""),
+                        "snippet": snippet,
                     })
 
             if not results:
@@ -134,12 +135,12 @@ class WebNewsSearchTool(Tool):
             "required": ["query"],
         }
 
-    async def execute(self, query: str, max_results: int = 5) -> str:
+    async def execute(self, query: str, max_results: int = 3) -> str:
         """Execute news search.
 
         Args:
             query: News search query.
-            max_results: Maximum number of results.
+            max_results: Maximum number of results (default: 3).
 
         Returns:
             Formatted news results.
@@ -147,17 +148,18 @@ class WebNewsSearchTool(Tool):
         try:
             from duckduckgo_search import DDGS
 
-            max_results = min(max_results, 10)
+            max_results = min(max_results, 5)
 
             results: List[Dict[str, str]] = []
             with DDGS() as ddgs:
                 for r in ddgs.news(query, max_results=max_results):
+                    snippet = r.get("body", "")[:120]  # Truncate
                     results.append({
                         "title": r.get("title", ""),
                         "url": r.get("url", ""),
                         "date": r.get("date", ""),
                         "source": r.get("source", ""),
-                        "snippet": r.get("body", ""),
+                        "snippet": snippet,
                     })
 
             if not results:

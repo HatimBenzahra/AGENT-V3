@@ -119,7 +119,20 @@ class WriteFileTool(Tool):
             if self.conversation_context:
                 self.conversation_context.register_file(file_path, auto_protect=True)
 
-            return f"File written successfully: {file_path}\nSize: {len(content)} bytes ({content.count(chr(10)) + 1} lines)"
+            # Get absolute path and session info for user reference
+            absolute_path = str(path.resolve())
+            lines = content.count('\n') + 1
+            session_id = self.execution_context.session_id
+            
+            # Build download URL
+            download_url = f"/api/files/{session_id}/download?path={file_path}"
+            
+            return (
+                f"File written successfully: {file_path}\n"
+                f"Size: {len(content)} bytes ({lines} lines)\n"
+                f"Local path: {absolute_path}\n"
+                f"Download URL: {download_url}"
+            )
         except Exception as exc:
             return f"Error writing file: {exc}"
 

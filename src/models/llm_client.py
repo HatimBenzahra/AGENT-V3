@@ -1,6 +1,4 @@
-"""LLM client with intelligent model selection."""
-import re
-from enum import Enum
+"""LLM client supporting OpenRouter and Ollama."""
 from typing import Dict, List, Optional
 
 import httpx
@@ -8,127 +6,99 @@ import httpx
 from src.config import Config
 
 
-class ModelType(Enum):
-    """Available model types for different tasks."""
-    FAST = "fast"       # Quick responses, simple tasks
-    CODE = "code"       # Code generation and programming
-    GENERAL = "general" # Complex reasoning
-
-
 class LLMClient:
-    """LLM client for Ollama API with intelligent model selection."""
+    """LLM client supporting multiple providers (OpenRouter, Ollama)."""
     
-    # Keywords that indicate code-related tasks
-    CODE_KEYWORDS = [
-        "code", "script", "program", "function", "class", "implement",
-        "create a python", "create a javascript", "create a typescript",
-        "write a python", "write a javascript", "write code",
-        "build", "develop", "algorithm", "api", "database",
-        "html", "css", "react", "vue", "django", "flask", "fastapi",
-        "debug", "fix the code", "refactor", "optimize code",
-    ]
-    
-    # Keywords that indicate need for complex reasoning
-    COMPLEX_KEYWORDS = [
-        "analyze", "explain in detail", "compare", "evaluate",
-        "design", "architecture", "plan", "strategy",
-    ]
-    
-    def __init__(self, model_type: Optional[ModelType] = None) -> None:
-        """Initialize LLM client.
+    def __init__(self) -> None:
+        """Initialize LLM client based on configuration."""
+        self.provider = Config.LLM_PROVIDER.lower()
         
-        Args:
-            model_type: Optional specific model type. If None, auto-selects based on task.
-        """
-        self.base_url = Config.OLLAMA_BASE_URL
-        self.default_model_type = model_type
-        
-        # Model mapping
-        self.models = {
-            ModelType.FAST: Config.OLLAMA_MODEL_FAST,
-            ModelType.CODE: Config.OLLAMA_MODEL_CODE,
-            ModelType.GENERAL: Config.OLLAMA_MODEL_GENERAL,
-        }
-        
-        self.current_model = self._get_model(model_type or ModelType.FAST)
-        print(f"[LLM] Initialized with Ollama at {self.base_url}")
-        print(f"[LLM] Available models: FAST={Config.OLLAMA_MODEL_FAST}, CODE={Config.OLLAMA_MODEL_CODE}, GENERAL={Config.OLLAMA_MODEL_GENERAL}")
-
-    def _get_model(self, model_type: ModelType) -> str:
-        """Get model name for given type."""
-        return self.models.get(model_type, Config.OLLAMA_MODEL_FAST)
-
-    def _detect_task_type(self, messages: List[Dict[str, str]]) -> ModelType:
-        """Detect the best model type based on message content.
-        
-        Args:
-            messages: The conversation messages.
+        if self.provider == "openrouter":
+            self.api_key = Config.OPENROUTER_API_KEY
+            self.base_url = Config.OPENROUTER_BASE_URL
+            self.model = Config.OPENROUTER_MODEL
             
-        Returns:
-            The recommended ModelType for this task.
-        """
-        # Get the user's task from messages
-        task_content = ""
-        for msg in messages:
-            if msg.get("role") == "user":
-                task_content += " " + msg.get("content", "")
-        
-        task_lower = task_content.lower()
-        
-        # Check for code-related keywords
-        for keyword in self.CODE_KEYWORDS:
-            if keyword in task_lower:
-                return ModelType.CODE
-        
-        # Check for complex reasoning keywords
-        for keyword in self.COMPLEX_KEYWORDS:
-            if keyword in task_lower:
-                return ModelType.GENERAL
-        
-        # Default to GENERAL model for better reasoning (mistral too weak for ReAct)
-        return ModelType.GENERAL
+            if not self.api_key:
+                raise ValueError("OPENROUTER_API_KEY not set in .env")
+                
+            print(f"[LLM] Using OpenRouter with model: {self.model}")
+        else:
+            # Fallback to Ollama
+            self.base_url = Config.OLLAMA_BASE_URL
+            self.model = Config.OLLAMA_MODEL
+            self.api_key = None
+            print(f"[LLM] Using Ollama at {self.base_url} with model: {self.model}")
 
     async def chat_completion(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.2,
-        max_tokens: Optional[int] = None,
-        model_type: Optional[ModelType] = None,
-        auto_select: bool = True,
+        max_tokens: Optional[int] = 4096,
     ) -> str:
-        """Send chat completion request to Ollama.
+        """Send chat completion request.
         
         Args:
             messages: Conversation messages.
             temperature: Sampling temperature.
             max_tokens: Maximum tokens to generate.
-            model_type: Force specific model type.
-            auto_select: If True and model_type is None, auto-select based on task.
             
         Returns:
             The model's response content.
         """
-        # Determine which model to use
-        if model_type:
-            selected_model = self._get_model(model_type)
-        elif self.default_model_type:
-            selected_model = self._get_model(self.default_model_type)
-        elif auto_select:
-            detected_type = self._detect_task_type(messages)
-            selected_model = self._get_model(detected_type)
-            print(f"[LLM] Auto-selected model: {selected_model} (type: {detected_type.value})")
+        if self.provider == "openrouter":
+            return await self._openrouter_completion(messages, temperature, max_tokens)
         else:
-            selected_model = self._get_model(ModelType.FAST)
+            return await self._ollama_completion(messages, temperature, max_tokens)
+
+    async def _openrouter_completion(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float,
+        max_tokens: Optional[int],
+    ) -> str:
+        """Send request to OpenRouter API."""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:3000",  # Required by OpenRouter
+            "X-Title": "ReAct Agent",  # Optional, shows in OpenRouter dashboard
+        }
         
-        self.current_model = selected_model
-        print(f"[LLM] Using model: {selected_model}")
+        request_body = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
         
-        # Set appropriate timeout based on model size
-        timeout = 120.0 if "mistral" in selected_model else 600.0  # 2min for fast, 10min for large
-        
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=request_body,
+            )
+            
+            if response.status_code != 200:
+                error_text = response.text
+                raise Exception(f"OpenRouter API error ({response.status_code}): {error_text}")
+            
+            data = response.json()
+            
+            if "choices" not in data or len(data["choices"]) == 0:
+                raise Exception(f"Invalid response from OpenRouter: {data}")
+            
+            return data["choices"][0]["message"]["content"]
+
+    async def _ollama_completion(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float,
+        max_tokens: Optional[int],
+    ) -> str:
+        """Send request to Ollama API."""
+        async with httpx.AsyncClient(timeout=300.0) as client:
             request_body = {
-                "model": selected_model,
+                "model": self.model,
                 "messages": messages,
                 "stream": False,
                 "options": {
@@ -145,33 +115,3 @@ class LLMClient:
             response.raise_for_status()
             data = response.json()
             return data["message"]["content"]
-
-    async def generate_code(
-        self,
-        prompt: str,
-        language: str = "python",
-        temperature: float = 0.1,
-    ) -> str:
-        """Generate code using the code-specialized model.
-        
-        Args:
-            prompt: Description of what code to generate.
-            language: Target programming language.
-            temperature: Lower = more deterministic.
-            
-        Returns:
-            Generated code.
-        """
-        messages = [
-            {
-                "role": "system",
-                "content": f"You are an expert {language} programmer. Generate clean, well-documented, production-quality code. Only output the code, no explanations unless asked."
-            },
-            {"role": "user", "content": prompt}
-        ]
-        
-        return await self.chat_completion(
-            messages,
-            temperature=temperature,
-            model_type=ModelType.CODE,
-        )
