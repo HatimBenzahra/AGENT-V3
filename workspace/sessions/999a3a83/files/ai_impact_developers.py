@@ -1,0 +1,18 @@
+from fpdf import FPDF
+
+pdf = FPDF()
+pdf.add_page()
+pdf.set_font('Arial', 'B', 16)
+pdf.cell(40, 10, 'How AI is Impacting Developers')
+pdf.ln(20)
+pdf.set_font('Arial', '', 12)
+pdf.multi_cell(0, 10, 'AI is transforming the way developers work. Here are some key areas of impact:')
+pdf.ln(10)
+pdf.multi_cell(0, 10, '1. **Automated Code Generation**: Tools like GitHub Copilot assist developers by suggesting code snippets and completing functions.')
+pdf.ln(10)
+pdf.multi_cell(0, 10, '2. **Bug Detection and Fixing**: AI-powered tools can identify bugs and suggest fixes, improving code quality.')
+pdf.ln(10)
+pdf.multi_cell(0, 10, '3. **Enhanced Productivity**: AI streamlines repetitive tasks, allowing developers to focus on more complex problems.')
+pdf.ln(10)
+pdf.multi_cell(0, 10, '4. **Personalized Learning**: AI-driven platforms offer tailored learning resources, helping developers upskill efficiently.')
+pdf.output('ai_impact_developers.pdf', 'F')
