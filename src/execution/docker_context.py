@@ -94,8 +94,10 @@ class DockerExecutionContext:
             raise RuntimeError("Container not started. Call start() first.")
 
         try:
+            # Use bash with command passed via -c flag
+            # The command is passed as a separate argument to avoid shell escaping issues
             exec_result = self.container.exec_run(
-                f"/bin/sh -c {repr(command)}",
+                ["bash", "-c", command],
                 workdir=self.mount_path,
                 stdout=True,
                 stderr=True,

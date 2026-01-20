@@ -7,10 +7,17 @@ load_dotenv()
 
 
 class Config:
-    # LLM settings
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat")
-    OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+    # LLM settings (Ollama)
+    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://100.68.221.26:11434")
+    
+    # Model selection - different models for different tasks
+    OLLAMA_MODEL_FAST = os.getenv("OLLAMA_MODEL_FAST", "mistral:latest")  # Fast for simple tasks
+    OLLAMA_MODEL_CODE = os.getenv("OLLAMA_MODEL_CODE", "qwen3-coder:30b")  # Specialized for code generation
+    OLLAMA_MODEL_GENERAL = os.getenv("OLLAMA_MODEL_GENERAL", "qwen3:32b")  # General reasoning
+    
+    # Default model - using GENERAL for better reasoning (slower but more reliable)
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", OLLAMA_MODEL_GENERAL)
+    
     MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "20"))
 
     # Docker workspace settings

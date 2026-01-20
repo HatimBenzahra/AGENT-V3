@@ -34,31 +34,63 @@ class ReActAgent:
     def _build_system_prompt(self) -> str:
         """Build the system prompt for ReAct reasoning."""
         tools = self.tools.get_tools_schema()
-        tool_lines = "\n".join(
-            [f"- {tool['function']['name']}: {tool['function']['description']}" for tool in tools]
-        )
-        return (
-            "You are a helpful AI assistant that uses the ReAct framework.\n\n"
-            "IMPORTANT: For complex tasks (tasks requiring multiple steps, file creation, "
-            "code execution, or any non-trivial work), you MUST first create a detailed plan "
-            "in your Thought. Break down the task into clear, sequential steps. "
-            "Then execute each step using tools.\n\n"
-            "Available tools:\n"
-            f"{tool_lines}\n\n"
-            "Follow this format strictly:\n"
-            "Thought: <your reasoning - for complex tasks, create a detailed plan here>\n"
-            "Action: <tool_name>({\"param\": \"value\"})\n"
-            "Observation: <result>\n"
-            "...\n"
-            "When done, respond with:\n"
-            "Action: Final Answer: <your final answer>\n\n"
-            "RULES:\n"
-            "1. Always think before acting\n"
-            "2. For complex tasks, create a plan first\n"
-            "3. Execute one action at a time\n"
-            "4. Use tools to accomplish tasks - don't just describe what you would do\n"
-            "5. Save important outputs using save_output tool\n"
-        )
+        tool_descriptions = []
+        for tool in tools:
+            func = tool['function']
+            name = func['name']
+            desc = func['description']
+            params = func.get('parameters', {}).get('properties', {})
+            param_str = ", ".join([f'"{k}": <{v.get("type", "string")}>' for k, v in params.items()])
+            tool_descriptions.append(f"- {name}: {desc}\n  Parameters: {{{param_str}}}")
+        
+        tool_lines = "\n".join(tool_descriptions)
+        
+        return f"""You are a helpful AI assistant that uses the ReAct framework to solve tasks.
+
+AVAILABLE TOOLS:
+{tool_lines}
+
+FORMAT (follow EXACTLY):
+Thought: <your reasoning>
+Action: tool_name({{"param_name": "param_value"}})
+
+After receiving an Observation, continue with another Thought/Action or finish with:
+Thought: <final reasoning>
+Action: Final Answer: <your complete answer>
+
+TOOL SELECTION GUIDE:
+- To CREATE or MODIFY files: use write_file (NOT execute_command with echo)
+- To RUN commands (python, pip, git, etc): use execute_command
+- To READ files: use read_file
+- To LIST directory contents: use list_directory
+
+EXAMPLES:
+
+Example 1 - Create a Python file:
+Thought: I need to create a Python file that prints Hello World. I'll use write_file.
+Action: write_file({{"file_path": "hello.py", "content": "print('Hello World')"}})
+
+Example 2 - Run Python script:
+Thought: I need to run the Python script I created.
+Action: execute_command({{"command": "python hello.py"}})
+
+Example 3 - Install a package:
+Thought: I need to install the requests library.
+Action: execute_command({{"command": "pip install requests"}})
+
+Example 4 - Final answer:
+Thought: I have completed the task successfully.
+Action: Final Answer: I created the file hello.py with a Hello World program.
+
+RULES:
+1. ALWAYS use write_file to create or modify files (never use echo > file)
+2. ALWAYS use the exact JSON format for tool parameters
+3. One action per response
+4. Wait for Observation before next action
+5. If an action fails, try a DIFFERENT approach (don't repeat the same action)
+6. NEVER repeat the same action twice - if you already did something, move on
+7. After completing a task successfully, IMMEDIATELY give a Final Answer
+8. If the user asks to "show" or "give" a file, use read_file to display its content"""
 
     def _parse_action(
         self, response: str
@@ -127,6 +159,10 @@ class ReActAgent:
 
         tool_names = {tool.name for tool in self.tools.get_all_tools()}
         react_steps = []
+        
+        # Loop detection: track recent actions to detect repetition
+        recent_actions: List[str] = []
+        max_repeated_actions = 2  # Stop if same action repeated more than 2 times
 
         while state.iteration < self.max_iterations and not state.is_complete:
             state.iteration += 1
@@ -154,9 +190,35 @@ class ReActAgent:
                 break
 
             if action_type in tool_names:
+                action_payload = json.dumps(tool_params or {}, ensure_ascii=False)
+                current_action = f"{action_type}:{action_payload}"
+                
+                # Check for repeated actions (loop detection)
+                repeat_count = recent_actions.count(current_action)
+                if repeat_count >= max_repeated_actions:
+                    loop_msg = (
+                        f"LOOP DETECTED: You have repeated the same action '{action_type}' {repeat_count + 1} times. "
+                        f"The task appears to be complete. Please provide a Final Answer summarizing what was done, "
+                        f"or try a COMPLETELY DIFFERENT approach if the task is not complete."
+                    )
+                    messages.append({"role": "user", "content": f"Observation: {loop_msg}"})
+                    react_steps.append({"type": "error", "content": loop_msg})
+                    
+                    # Force stop after too many repeats
+                    if repeat_count >= max_repeated_actions + 1:
+                        state.set_final_answer(f"Task stopped due to repeated actions. Last action: {action_type}")
+                        react_steps.append({"type": "final_answer", "content": state.final_answer})
+                        break
+                    continue
+                
+                # Track this action
+                recent_actions.append(current_action)
+                # Keep only last 10 actions
+                if len(recent_actions) > 10:
+                    recent_actions.pop(0)
+                
                 try:
                     tool = self.tools.get_tool(action_type)
-                    action_payload = json.dumps(tool_params or {}, ensure_ascii=False)
                     state.add_action(f"{action_type}({action_payload})")
                     messages.append(
                         {"role": "assistant", "content": f"Action: {action_type}({action_payload})"}
@@ -167,11 +229,13 @@ class ReActAgent:
                     state.add_observation(result)
                     messages.append({"role": "user", "content": f"Observation: {result}"})
                     react_steps.append({"type": "observation", "content": result})
+                        
                 except Exception as exc:
                     error_msg = f"Error executing {action_type}: {exc}"
                     state.add_observation(error_msg)
                     messages.append({"role": "user", "content": f"Observation: {error_msg}"})
                     react_steps.append({"type": "error", "content": error_msg})
+                        
                 continue
 
             error_msg = (
