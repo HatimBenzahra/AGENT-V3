@@ -15,6 +15,8 @@ from src.tools.file_tools import (
 from src.tools.output_tool import ListOutputsTool, SaveOutputTool
 from src.tools.registry import ToolRegistry
 from src.tools.terminal_tool import TerminalTool
+from src.tools.web_search_tool import WebSearchTool, WebNewsSearchTool
+from src.tools.http_tool import HttpClientTool, FetchWebPageTool
 
 
 async def main() -> None:
@@ -68,6 +70,13 @@ async def main() -> None:
         # Register all tools
         registry = ToolRegistry()
         registry.register(CalculatorTool())
+
+        # Web tools (no context needed)
+        registry.register(WebSearchTool())
+        registry.register(WebNewsSearchTool())
+        registry.register(HttpClientTool())
+        registry.register(FetchWebPageTool())
+
         registry.register(TerminalTool(
             execution_context=docker_ctx,
             conversation_context=context,

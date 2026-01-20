@@ -1,0 +1,30 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Workspace directory
+workspace/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
