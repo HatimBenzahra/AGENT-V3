@@ -25,6 +25,7 @@ from src.tools.output_tool import ListOutputsTool, SaveOutputTool
 from src.tools.pdf_tool import CreatePDFTool
 from src.tools.registry import ToolRegistry
 from src.tools.terminal_tool import TerminalTool
+from src.tools.vision_tool import VisionTool, ChartAnalyzerTool
 from src.tools.web_search_tool import WebNewsSearchTool, WebSearchTool
 
 # Active WebSocket connections: session_id -> connection info
@@ -99,6 +100,16 @@ async def create_session_with_tools(session_id: Optional[str] = None) -> tuple[S
     # Context-dependent tools
     registry.register(SaveOutputTool(conversation_context=session.context))
     registry.register(ListOutputsTool(conversation_context=session.context))
+    
+    # Vision tools
+    registry.register(VisionTool(
+        execution_context=session.docker_context,
+        conversation_context=session.context,
+    ))
+    registry.register(ChartAnalyzerTool(
+        execution_context=session.docker_context,
+        conversation_context=session.context,
+    ))
 
     return session, registry
 
@@ -112,10 +123,23 @@ class StreamingReActAgent(ReActAgent):
         conversation_context: Optional[ConversationContext] = None,
         websocket: Optional[WebSocket] = None,
         interrupt_check: Optional[Callable[[], bool]] = None,
+        suggestion_getter: Optional[Callable[[], Optional[str]]] = None,
     ):
         super().__init__(tool_registry, conversation_context)
         self.websocket = websocket
         self.interrupt_check = interrupt_check
+        self.suggestion_getter = suggestion_getter
+        self.pending_suggestions: list[str] = []
+        
+    def add_suggestion(self, suggestion: str):
+        """Add a user suggestion to be processed."""
+        self.pending_suggestions.append(suggestion)
+        
+    def get_pending_suggestions(self) -> list[str]:
+        """Get and clear pending suggestions."""
+        suggestions = self.pending_suggestions.copy()
+        self.pending_suggestions.clear()
+        return suggestions
 
     async def run_streaming(self, task: str) -> AgentState:
         """Run the ReAct loop with streaming to WebSocket."""
@@ -150,6 +174,20 @@ class StreamingReActAgent(ReActAgent):
                     await send_message(self.websocket, "interrupted")
                 state.set_final_answer("Task interrupted by user.")
                 break
+                
+            # Check for user suggestions
+            suggestions = self.get_pending_suggestions()
+            if suggestions:
+                for suggestion in suggestions:
+                    suggestion_msg = f"[USER SUGGESTION] The user suggests: {suggestion}"
+                    messages.append({"role": "user", "content": suggestion_msg})
+                    react_steps.append({"type": "suggestion", "content": suggestion})
+                    
+                    if self.websocket:
+                        await send_message(
+                            self.websocket, "suggestion_applied",
+                            content=suggestion
+                        )
 
             state.iteration += 1
             response = await self.llm.chat_completion(messages)
@@ -285,6 +323,9 @@ async def handle_websocket_message(
                 websocket=websocket,
                 interrupt_check=lambda: state["should_interrupt"],
             )
+            
+            # Store agent reference for suggestions
+            state["active_agent"] = agent
 
             # Run agent
             await send_message(websocket, "processing", task=content)
@@ -301,6 +342,7 @@ async def handle_websocket_message(
                 pass
         finally:
             state["is_processing"] = False
+            state["active_agent"] = None
 
     elif msg_type == "interrupt":
         if state["is_processing"]:
@@ -310,9 +352,37 @@ async def handle_websocket_message(
     elif msg_type == "suggestion":
         # Handle user suggestion during processing
         suggestion = message.get("content", "")
-        if suggestion:
-            # For now, just acknowledge - could be used to modify agent behavior
-            await send_message(websocket, "suggestion_received", content=suggestion)
+        if suggestion and state.get("is_processing"):
+            active_agent = state.get("active_agent")
+            if active_agent and isinstance(active_agent, StreamingReActAgent):
+                active_agent.add_suggestion(suggestion)
+                await send_message(
+                    websocket, "suggestion_received",
+                    content=suggestion,
+                    status="queued"
+                )
+            else:
+                await send_message(
+                    websocket, "suggestion_received",
+                    content=suggestion,
+                    status="no_active_agent"
+                )
+        elif suggestion:
+            await send_message(
+                websocket, "suggestion_received",
+                content=suggestion,
+                status="not_processing"
+            )
+            
+    elif msg_type == "request_plan":
+        # User requests to see the plan before execution
+        content = message.get("content", "")
+        if content:
+            await send_message(
+                websocket, "plan_requested",
+                task=content,
+                message="Plan generation is available with multi-agent mode"
+            )
 
     else:
         await send_message(websocket, "error", message=f"Unknown message type: {msg_type}")

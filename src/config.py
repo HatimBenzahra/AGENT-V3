@@ -18,6 +18,7 @@ class Config:
     # Ollama settings (fallback)
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://100.68.221.26:11434")
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:32b")
+    OLLAMA_VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "qwen3-vl:32b")
     
     MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "100"))  # High for long documents
 

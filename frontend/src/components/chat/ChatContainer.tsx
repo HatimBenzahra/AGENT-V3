@@ -13,6 +13,7 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
+import { SuggestionPanel } from './SuggestionPanel';
 import { Message, ServerMessage, ClientMessage, ConnectionState } from '@/lib/types';
 import { getWebSocketUrl } from '@/lib/api';
 
@@ -180,6 +181,27 @@ export function ChatContainer({ sessionId, onMenuClick, onSessionCreated }: Chat
             setIsProcessing(false);
             setCurrentThought(null);
             break;
+            
+          case 'suggestion_received':
+            addMessage({
+              type: 'system',
+              content: `Suggestion queued: "${data.content}"`,
+            });
+            break;
+            
+          case 'suggestion_applied':
+            addMessage({
+              type: 'system',
+              content: `Suggestion applied: "${data.content}"`,
+            });
+            break;
+            
+          case 'recovery':
+            addMessage({
+              type: 'system',
+              content: data.content || 'Self-healing in progress...',
+            });
+            break;
         }
       } catch (error) {
         console.error('Failed to parse message:', error);
@@ -253,6 +275,10 @@ export function ChatContainer({ sessionId, onMenuClick, onSessionCreated }: Chat
     sendMessage({ type: 'interrupt' });
   };
 
+  const handleSuggestion = (suggestion: string) => {
+    sendMessage({ type: 'suggestion', content: suggestion });
+  };
+
   const getConnectionColor = () => {
     switch (connectionState) {
       case 'connected':
@@ -288,11 +314,19 @@ export function ChatContainer({ sessionId, onMenuClick, onSessionCreated }: Chat
       </AppBar>
 
       {/* Messages */}
-      <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+      <Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
         <MessageList
           messages={messages}
           currentThought={currentThought}
           isProcessing={isProcessing}
+        />
+        
+        {/* Suggestion Panel - appears during processing */}
+        <SuggestionPanel
+          isProcessing={isProcessing}
+          onSuggest={handleSuggestion}
+          onInterrupt={handleInterrupt}
+          currentThought={currentThought}
         />
       </Box>
 

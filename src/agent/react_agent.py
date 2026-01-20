@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from src.agent.state import AgentState
+from src.agent.recovery import RecoveryManager, ErrorPatterns
 from src.config import Config
 from src.models.llm_client import LLMClient
 from src.tools.registry import ToolRegistry
@@ -30,6 +31,7 @@ class ReActAgent:
         self.tools = tool_registry
         self.max_iterations = Config.MAX_ITERATIONS
         self.conversation_context = conversation_context
+        self.recovery_manager = RecoveryManager(max_retries=3)
 
     def _build_system_prompt(self) -> str:
         """Build the system prompt for ReAct reasoning."""
@@ -128,6 +130,9 @@ Remember: You have extensive knowledge. Create content directly!"""
             AgentState with the results.
         """
         state = AgentState(task=task)
+        
+        # Reset recovery manager for new task
+        self.recovery_manager.reset()
 
         # Build initial messages with conversation history for context
         messages = [
@@ -216,15 +221,68 @@ Remember: You have extensive knowledge. Create content directly!"""
                     react_steps.append({"type": "action", "tool": action_type, "params": tool_params})
 
                     result = await tool.execute(**(tool_params or {}))
+                    
+                    # Check if result indicates an error that can be recovered
+                    error_type, _ = ErrorPatterns.detect_error_type(result)
+                    if error_type.value != "unknown" and "Error" in result:
+                        # Try to recover
+                        recovery_action = self.recovery_manager.analyze_error(
+                            error_message=result,
+                            action=action_type,
+                            params=tool_params,
+                        )
+                        
+                        if recovery_action and recovery_action.action_type == "execute_command":
+                            # Execute recovery action
+                            recovery_msg = f"[SELF-HEALING] Detected {error_type.value}. Trying: {recovery_action.description}"
+                            messages.append({"role": "user", "content": f"Observation: {recovery_msg}"})
+                            react_steps.append({"type": "recovery", "content": recovery_msg})
+                            
+                            # Execute the recovery command
+                            recovery_tool = self.tools.get_tool("execute_command")
+                            if recovery_tool:
+                                recovery_result = await recovery_tool.execute(**recovery_action.params)
+                                messages.append({"role": "user", "content": f"Recovery result: {recovery_result}"})
+                                react_steps.append({"type": "observation", "content": f"Recovery: {recovery_result}"})
+                                
+                                # Now retry the original action
+                                retry_result = await tool.execute(**(tool_params or {}))
+                                state.add_observation(retry_result)
+                                messages.append({"role": "user", "content": f"Observation (retry): {retry_result}"})
+                                react_steps.append({"type": "observation", "content": retry_result})
+                                continue
+                    
                     state.add_observation(result)
                     messages.append({"role": "user", "content": f"Observation: {result}"})
                     react_steps.append({"type": "observation", "content": result})
                         
                 except Exception as exc:
                     error_msg = f"Error executing {action_type}: {exc}"
-                    state.add_observation(error_msg)
-                    messages.append({"role": "user", "content": f"Observation: {error_msg}"})
-                    react_steps.append({"type": "error", "content": error_msg})
+                    
+                    # Try to recover from the exception
+                    recovery_action = self.recovery_manager.analyze_error(
+                        error_message=str(exc),
+                        action=action_type,
+                        params=tool_params,
+                    )
+                    
+                    if recovery_action and recovery_action.action_type == "execute_command":
+                        recovery_msg = f"[SELF-HEALING] Error detected. Trying: {recovery_action.description}"
+                        messages.append({"role": "user", "content": f"Observation: {error_msg}\n{recovery_msg}"})
+                        react_steps.append({"type": "recovery", "content": recovery_msg})
+                        
+                        try:
+                            recovery_tool = self.tools.get_tool("execute_command")
+                            if recovery_tool:
+                                recovery_result = await recovery_tool.execute(**recovery_action.params)
+                                messages.append({"role": "user", "content": f"Recovery result: {recovery_result}"})
+                                react_steps.append({"type": "observation", "content": f"Recovery: {recovery_result}"})
+                        except Exception as recovery_exc:
+                            messages.append({"role": "user", "content": f"Recovery failed: {recovery_exc}"})
+                    else:
+                        state.add_observation(error_msg)
+                        messages.append({"role": "user", "content": f"Observation: {error_msg}"})
+                        react_steps.append({"type": "error", "content": error_msg})
                         
                 continue
 

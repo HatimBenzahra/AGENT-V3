@@ -20,7 +20,10 @@ export type ServerMessage =
   | { type: 'interrupted' }
   | { type: 'interrupting' }
   | { type: 'complete'; task: string }
-  | { type: 'suggestion_received'; content: string };
+  | { type: 'suggestion_received'; content: string; status?: string }
+  | { type: 'suggestion_applied'; content: string }
+  | { type: 'recovery'; content: string }
+  | { type: 'plan_requested'; task: string; message: string };
 
 export interface FileCreated {
   path: string;
