@@ -1,0 +1,358 @@
+id: playbook_app
+name: Application
+deliverable_type: app
+triggers:
+  - application
+  - app
+  - webapp
+  - website
+  - site web
+  - frontend
+  - interface
+  - dashboard
+  - crud
+  - todo
+  - calculator
+  - outil
+  - tool
+
+default_sections:
+  - id: requirements
+    title: Analyse des besoins
+    section_type: text
+    description: Comprendre ce que l'application doit faire
+    optional: false
+    order: 1
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      AVANT de coder, clarifier:
+      1. Quel probleme l'app resout?
+      2. Qui sont les utilisateurs?
+      3. Quelles sont les fonctionnalites ESSENTIELLES? (MVP)
+      4. Quelles sont les fonctionnalites SECONDAIRES?
+      5. Contraintes techniques (navigateurs, devices, performance)
+      
+      Creer un fichier SPECS.md avec:
+      - User stories principales
+      - Maquette textuelle des ecrans
+      - Liste des fonctionnalites priorisees
+
+  - id: tech_stack
+    title: Choix techniques
+    section_type: text
+    description: Technologies et architecture
+    optional: false
+    order: 2
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Choisir la stack ADAPTEE au projet:
+      
+      Pour une app SIMPLE (calculatrice, todo):
+      - HTML/CSS/JS vanilla
+      - Pas de framework
+      - Pas de build
+      
+      Pour une app MOYENNE (dashboard, CRUD):
+      - React ou Vue
+      - CSS framework (Tailwind)
+      - API simple (Flask/Express)
+      
+      Pour une app COMPLEXE:
+      - Framework frontend complet
+      - Backend robuste
+      - Base de donnees
+      
+      JUSTIFIER chaque choix dans ARCHITECTURE.md
+    editable_fields:
+      - name: app_name
+        field_type: text
+        required: true
+      - name: framework
+        field_type: select
+        options: [vanilla, react, vue, svelte, flask, fastapi, express]
+        required: true
+
+  - id: app_structure
+    title: Structure de l'application
+    section_type: code
+    description: Organisation des fichiers
+    optional: false
+    order: 3
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Creer la structure COMPLETE avant de coder:
+      
+      App Vanilla:
+      app/
+      ├── index.html
+      ├── css/
+      │   └── style.css
+      ├── js/
+      │   ├── app.js
+      │   └── utils.js
+      └── assets/
+      
+      App React:
+      app/
+      ├── public/
+      │   └── index.html
+      ├── src/
+      │   ├── index.js
+      │   ├── App.js
+      │   ├── components/
+      │   ├── pages/
+      │   ├── hooks/
+      │   ├── utils/
+      │   └── styles/
+      ├── package.json
+      └── README.md
+      
+      App avec Backend:
+      app/
+      ├── frontend/
+      ├── backend/
+      │   ├── app.py
+      │   ├── routes/
+      │   ├── models/
+      │   └── services/
+      └── README.md
+
+  - id: ui_design
+    title: Interface utilisateur
+    section_type: code
+    description: Design et composants UI
+    optional: false
+    order: 4
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Construire l'UI methodiquement:
+      
+      1. LAYOUT d'abord:
+         - Structure HTML semantique
+         - Grille/flexbox pour disposition
+         - Responsive design (mobile-first)
+      
+      2. COMPOSANTS ensuite:
+         - Boutons
+         - Formulaires
+         - Cartes
+         - Navigation
+         - Modales
+      
+      3. STYLES:
+         - Palette de couleurs coherente
+         - Typographie lisible
+         - Espacement consistent
+         - Etats (hover, active, disabled)
+      
+      4. ACCESSIBILITE:
+         - Labels pour les inputs
+         - Contraste suffisant
+         - Navigation clavier
+    subsections:
+      - id: layout
+        title: Layout principal
+        section_type: code
+        order: 1
+        content_hint: |
+          Creer le squelette HTML/JSX:
+          - Header avec navigation
+          - Zone de contenu principal
+          - Sidebar si necessaire
+          - Footer
+      - id: components
+        title: Composants
+        section_type: code
+        order: 2
+        content_hint: |
+          Creer chaque composant separement:
+          - Un fichier par composant
+          - Props/parametres clairs
+          - Styles isoles
+      - id: styles
+        title: Styles
+        section_type: code
+        order: 3
+        content_hint: |
+          Organiser les styles:
+          - Variables CSS pour couleurs/tailles
+          - Classes reutilisables
+          - Media queries pour responsive
+
+  - id: core_logic
+    title: Logique applicative
+    section_type: code
+    description: Fonctionnalites et interactions
+    optional: false
+    order: 5
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Implementer la logique:
+      
+      1. ETAT de l'application:
+         - Quelles donnees sont stockees?
+         - Comment elles changent?
+         - Ou sont-elles (local, serveur)?
+      
+      2. ACTIONS utilisateur:
+         - Clic sur bouton -> quoi?
+         - Soumission formulaire -> quoi?
+         - Navigation -> quoi?
+      
+      3. VALIDATION:
+         - Valider les inputs utilisateur
+         - Messages d'erreur clairs
+         - Etats de chargement
+      
+      4. PERSISTENCE:
+         - localStorage pour donnees locales
+         - API calls pour serveur
+    subsections:
+      - id: state_management
+        title: Gestion de l'etat
+        section_type: code
+        order: 1
+        content_hint: |
+          Definir et gerer l'etat:
+          - Variables d'etat
+          - Fonctions de mise a jour
+          - Synchronisation UI
+      - id: event_handlers
+        title: Gestionnaires d'evenements
+        section_type: code
+        order: 2
+        content_hint: |
+          Gerer les interactions:
+          - Click handlers
+          - Form submissions
+          - Keyboard events
+      - id: data_persistence
+        title: Persistence des donnees
+        section_type: code
+        order: 3
+        content_hint: |
+          Sauvegarder les donnees:
+          - localStorage/sessionStorage
+          - Ou appels API
+
+  - id: backend
+    title: Backend / API
+    section_type: code
+    description: Serveur et endpoints
+    optional: true
+    order: 6
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT (si backend necessaire):
+      
+      1. ROUTES API:
+         - GET /items - liste
+         - GET /items/:id - detail
+         - POST /items - creation
+         - PUT /items/:id - mise a jour
+         - DELETE /items/:id - suppression
+      
+      2. VALIDATION:
+         - Valider les donnees entrantes
+         - Retourner des erreurs claires
+      
+      3. REPONSES:
+         - Format JSON coherent
+         - Codes HTTP appropries
+         - Messages d'erreur utiles
+    subsections:
+      - id: api_routes
+        title: Routes API
+        section_type: code
+        order: 1
+      - id: data_models
+        title: Modeles de donnees
+        section_type: code
+        order: 2
+      - id: business_logic
+        title: Logique metier
+        section_type: code
+        order: 3
+
+  - id: testing
+    title: Tests
+    section_type: code
+    description: Verification du fonctionnement
+    optional: false
+    order: 7
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      TESTER l'application:
+      
+      1. Tests MANUELS:
+         - Ouvrir dans le navigateur
+         - Tester chaque fonctionnalite
+         - Tester sur mobile (responsive)
+         - Tester les cas d'erreur
+      
+      2. Tests AUTOMATISES (si framework):
+         - Tests unitaires des fonctions
+         - Tests des composants
+         - Tests d'integration
+
+  - id: documentation
+    title: Documentation
+    section_type: text
+    description: README et guide utilisateur
+    optional: false
+    order: 8
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      README.md doit contenir:
+      
+      1. NOM et description de l'app
+      2. SCREENSHOT ou demo
+      3. FONCTIONNALITES
+      4. INSTALLATION:
+         - Prerequis
+         - Commandes
+      5. UTILISATION:
+         - Comment lancer
+         - Comment utiliser
+      6. STRUCTURE du projet
+      7. TECHNOLOGIES utilisees
+
+  - id: deployment
+    title: Deploiement
+    section_type: code
+    description: Mise en production
+    optional: true
+    order: 9
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Preparer pour le deploiement:
+      
+      1. Build de production
+      2. Variables d'environnement
+      3. Instructions de deploiement
+      4. Dockerfile si pertinent
+
+tools_allowed:
+  - write_file
+  - read_file
+  - execute_command
+  - list_directory
+  - web_search
+
+quality_gates:
+  - Application demarre sans erreurs
+  - Toutes les fonctionnalites principales marchent
+  - Interface responsive (mobile + desktop)
+  - Pas d'erreurs dans la console
+  - Code organise et commente
+  - README complet avec instructions
+
+output_formats:
+  - folder
+  - zip
+
+examples:
+  - Cree une application todo list
+  - Developpe un dashboard de statistiques
+  - Fais une calculatrice scientifique
+  - Cree un convertisseur d'unites
+  - Developpe un gestionnaire de notes

@@ -1,0 +1,158 @@
+id: playbook_presentation
+name: Presentation / Slides
+deliverable_type: presentation
+triggers:
+  - présentation
+  - presentation
+  - slides
+  - powerpoint
+  - pptx
+  - diaporama
+  - pitch
+  - keynote
+
+default_sections:
+  - id: title_slide
+    title: Slide de titre
+    section_type: cover
+    description: Titre, sous-titre, auteur, date
+    optional: false
+    order: 1
+    editable_fields:
+      - name: title
+        field_type: text
+        required: true
+      - name: subtitle
+        field_type: text
+        required: false
+      - name: presenter
+        field_type: text
+        required: true
+      - name: date
+        field_type: text
+        required: true
+      - name: company_logo
+        field_type: text
+        required: false
+
+  - id: agenda
+    title: Agenda / Plan
+    section_type: list
+    description: Sommaire de la présentation
+    optional: true
+    order: 2
+
+  - id: introduction
+    title: Introduction
+    section_type: text
+    description: Contexte et problématique
+    optional: false
+    order: 3
+    content_hint: 1-2 slides max, accrocher l'audience
+
+  - id: main_content
+    title: Corps de la présentation
+    section_type: text
+    description: Slides principales - générées dynamiquement
+    optional: false
+    order: 4
+    content_hint: Chaque slide = 1 idée clé, max 6 bullet points
+
+  - id: data_slides
+    title: Données et visualisations
+    section_type: chart
+    description: Graphiques, tableaux, infographies
+    optional: true
+    order: 5
+    subsections:
+      - id: key_metrics
+        title: Chiffres clés
+        section_type: chart
+        optional: true
+        order: 1
+      - id: comparisons
+        title: Comparatifs
+        section_type: table
+        optional: true
+        order: 2
+      - id: trends
+        title: Tendances
+        section_type: chart
+        optional: true
+        order: 3
+
+  - id: case_studies
+    title: Cas d'étude / Exemples
+    section_type: text
+    description: Illustrations concrètes
+    optional: true
+    order: 6
+
+  - id: recommendations
+    title: Recommandations
+    section_type: list
+    description: Actions suggérées
+    optional: true
+    order: 7
+    content_hint: 3-5 recommandations actionnables
+
+  - id: conclusion
+    title: Conclusion
+    section_type: text
+    description: Synthèse et message clé
+    optional: false
+    order: 8
+    content_hint: Rappeler le message principal, call to action
+
+  - id: qa_slide
+    title: Questions & Réponses
+    section_type: text
+    description: Slide de Q&A
+    optional: true
+    order: 9
+
+  - id: contact_slide
+    title: Contact / Merci
+    section_type: text
+    description: Informations de contact
+    optional: true
+    order: 10
+    editable_fields:
+      - name: email
+        field_type: text
+        required: false
+      - name: phone
+        field_type: text
+        required: false
+      - name: website
+        field_type: text
+        required: false
+
+  - id: appendix_slides
+    title: Annexes
+    section_type: text
+    description: Slides de backup
+    optional: true
+    order: 11
+
+tools_allowed:
+  - web_search
+  - news_search
+  - write_file
+  - execute_command
+
+quality_gates:
+  - Max 1 idée par slide
+  - Visuels > Texte
+  - Cohérence graphique
+  - 15-20 slides max pour 30min
+
+output_formats:
+  - pptx
+  - pdf
+  - html
+
+examples:
+  - Crée une présentation sur l'IA générative
+  - Fais un pitch deck pour une startup fintech
+  - Prépare des slides pour une formation Git

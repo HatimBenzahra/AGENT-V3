@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Drawer, useMediaQuery, useTheme, Fab, Tooltip, Badge } from '@mui/material';
+import { Box, Drawer, useMediaQuery, useTheme, Fab, Tooltip } from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { SessionList } from '@/components/session/SessionList';
@@ -45,13 +45,12 @@ export default function Home() {
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
-      {/* Session Sidebar (Left) */}
       <Drawer
         variant={isMobile ? 'temporary' : 'persistent'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         sx={{
-          width: DRAWER_WIDTH,
+          width: drawerOpen ? DRAWER_WIDTH : 0,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
@@ -69,25 +68,14 @@ export default function Home() {
         />
       </Drawer>
 
-      {/* Main Chat Area */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           height: '100vh',
           overflow: 'hidden',
-          ml: !isMobile && drawerOpen ? 0 : `-${DRAWER_WIDTH}px`,
-          mr: filesDrawerOpen ? 0 : `-${FILES_DRAWER_WIDTH}px`,
-          transition: theme.transitions.create(['margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          ...(drawerOpen && {
-            ml: 0,
-          }),
-          ...(filesDrawerOpen && {
-            mr: 0,
-          }),
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <ChatContainer
@@ -96,7 +84,6 @@ export default function Home() {
           onSessionCreated={(id) => setCurrentSessionId(id)}
         />
 
-        {/* Files FAB Button */}
         {currentSessionId && !filesDrawerOpen && (
           <Tooltip title="View Files" placement="left">
             <Fab
@@ -116,13 +103,12 @@ export default function Home() {
         )}
       </Box>
 
-      {/* Files Sidebar (Right) */}
       <Drawer
         variant="persistent"
         anchor="right"
         open={filesDrawerOpen}
         sx={{
-          width: FILES_DRAWER_WIDTH,
+          width: filesDrawerOpen ? FILES_DRAWER_WIDTH : 0,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: FILES_DRAWER_WIDTH,
@@ -140,7 +126,6 @@ export default function Home() {
         />
       </Drawer>
 
-      {/* File Viewer Modal */}
       {currentSessionId && (
         <FileViewer
           sessionId={currentSessionId}

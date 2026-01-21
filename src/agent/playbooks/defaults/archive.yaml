@@ -1,0 +1,85 @@
+id: playbook_archive
+name: Archive / Package
+deliverable_type: archive
+triggers:
+  - zip
+  - archive
+  - package
+  - bundle
+  - livrable
+  - deliverable
+  - rends-moi
+  - envoie-moi
+
+default_sections:
+  - id: archive_structure
+    title: Structure de l'archive
+    section_type: text
+    description: Organisation des fichiers dans l'archive
+    optional: false
+    order: 1
+    editable_fields:
+      - name: archive_name
+        field_type: text
+        required: true
+      - name: format
+        field_type: select
+        options: [zip, tar.gz, 7z]
+        default: zip
+        required: true
+
+  - id: included_files
+    title: Fichiers inclus
+    section_type: list
+    description: Liste des fichiers et dossiers à inclure
+    optional: false
+    order: 2
+    content_hint: Référence les livrables des autres étapes
+
+  - id: readme
+    title: README
+    section_type: text
+    description: Documentation d'utilisation
+    optional: true
+    order: 3
+    subsections:
+      - id: readme_overview
+        title: Vue d'ensemble
+        section_type: text
+        order: 1
+      - id: readme_installation
+        title: Installation
+        section_type: text
+        optional: true
+        order: 2
+      - id: readme_usage
+        title: Utilisation
+        section_type: text
+        optional: true
+        order: 3
+
+  - id: manifest
+    title: Manifeste
+    section_type: text
+    description: Liste des fichiers avec descriptions
+    optional: true
+    order: 4
+
+tools_allowed:
+  - write_file
+  - read_file
+  - execute_command
+  - list_directory
+
+quality_gates:
+  - Tous les fichiers référencés présents
+  - Archive extractible sans erreurs
+  - README présent si multiple fichiers
+
+output_formats:
+  - zip
+
+examples:
+  - Mets tout dans un zip
+  - Crée une archive avec le code et la documentation
+  - Package le projet pour livraison

@@ -1,0 +1,335 @@
+category: devops
+
+recipes:
+  - title: "Commandes Git essentielles"
+    question: "Quelles sont les commandes Git les plus utilisées?"
+    answer: |
+      Commandes Git de base:
+      
+      # Configuration
+      git config --global user.name "Nom"
+      git config --global user.email "email@example.com"
+      
+      # Initialisation
+      git init                          # Nouveau repo
+      git clone <url>                   # Cloner
+      
+      # Status et historique
+      git status                        # État actuel
+      git log --oneline                 # Historique court
+      git diff                          # Modifications
+      git diff --staged                 # Modifications staged
+      
+      # Staging et commit
+      git add .                         # Tout ajouter
+      git add file.txt                  # Un fichier
+      git commit -m "Message"           # Commit
+      git commit --amend                # Modifier dernier commit
+      
+      # Branches
+      git branch                        # Lister
+      git branch feature                # Créer
+      git checkout feature              # Changer
+      git checkout -b feature           # Créer + changer
+      git merge feature                 # Fusionner
+      git branch -d feature             # Supprimer
+      
+      # Remote
+      git push origin main              # Pousser
+      git pull origin main              # Récupérer + merge
+      git fetch origin                  # Récupérer seulement
+      git push -u origin feature        # Nouvelle branche
+      
+      # Annuler
+      git checkout -- file.txt          # Annuler modifs
+      git reset HEAD file.txt           # Unstage
+      git reset --soft HEAD~1           # Annuler commit (garde modifs)
+      git reset --hard HEAD~1           # Annuler commit (perd modifs)
+      git revert <commit>               # Annuler commit (nouveau commit)
+    tags:
+      - git
+      - versionning
+      - commandes
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "Créer un Dockerfile"
+    question: "Comment créer un Dockerfile pour une application?"
+    answer: |
+      Dockerfile pour Python:
+      
+      FROM python:3.11-slim
+      
+      WORKDIR /app
+      
+      COPY requirements.txt .
+      RUN pip install --no-cache-dir -r requirements.txt
+      
+      COPY . .
+      
+      EXPOSE 8000
+      
+      CMD ["python", "main.py"]
+      
+      ---
+      
+      Dockerfile pour Node.js:
+      
+      FROM node:18-alpine
+      
+      WORKDIR /app
+      
+      COPY package*.json ./
+      RUN npm ci --only=production
+      
+      COPY . .
+      
+      EXPOSE 3000
+      
+      CMD ["node", "server.js"]
+      
+      ---
+      
+      Dockerfile multi-stage (production):
+      
+      # Build
+      FROM node:18 AS builder
+      WORKDIR /app
+      COPY package*.json ./
+      RUN npm ci
+      COPY . .
+      RUN npm run build
+      
+      # Production
+      FROM node:18-alpine
+      WORKDIR /app
+      COPY --from=builder /app/dist ./dist
+      COPY --from=builder /app/node_modules ./node_modules
+      EXPOSE 3000
+      CMD ["node", "dist/index.js"]
+    tags:
+      - docker
+      - dockerfile
+      - containerisation
+    tools_used:
+      - write_file
+    difficulty: medium
+
+  - title: "Docker Compose"
+    question: "Comment utiliser Docker Compose pour plusieurs services?"
+    answer: |
+      docker-compose.yml exemple:
+      
+      version: "3.8"
+      
+      services:
+        app:
+          build: .
+          ports:
+            - "8000:8000"
+          volumes:
+            - .:/app
+          environment:
+            - DATABASE_URL=postgresql://user:pass@db:5432/mydb
+          depends_on:
+            - db
+            - redis
+      
+        db:
+          image: postgres:15
+          volumes:
+            - postgres_data:/var/lib/postgresql/data
+          environment:
+            - POSTGRES_USER=user
+            - POSTGRES_PASSWORD=pass
+            - POSTGRES_DB=mydb
+      
+        redis:
+          image: redis:7-alpine
+          ports:
+            - "6379:6379"
+      
+        nginx:
+          image: nginx:alpine
+          ports:
+            - "80:80"
+          volumes:
+            - ./nginx.conf:/etc/nginx/nginx.conf:ro
+          depends_on:
+            - app
+      
+      volumes:
+        postgres_data:
+      
+      # Commandes:
+      # docker-compose up -d          # Démarrer
+      # docker-compose down           # Arrêter
+      # docker-compose logs -f app    # Logs
+      # docker-compose exec app bash  # Shell
+      # docker-compose build          # Rebuild
+    tags:
+      - docker
+      - docker-compose
+      - services
+    tools_used:
+      - write_file
+      - terminal
+    difficulty: medium
+
+  - title: "Commandes Docker courantes"
+    question: "Quelles sont les commandes Docker les plus utiles?"
+    answer: |
+      Commandes Docker essentielles:
+      
+      # Images
+      docker images                     # Lister
+      docker build -t myapp .           # Construire
+      docker pull nginx:latest          # Télécharger
+      docker rmi image_id               # Supprimer
+      
+      # Conteneurs
+      docker ps                         # En cours
+      docker ps -a                      # Tous
+      docker run -d -p 8080:80 nginx    # Lancer
+      docker run -it ubuntu bash        # Interactif
+      docker stop container_id          # Arrêter
+      docker rm container_id            # Supprimer
+      docker logs -f container_id       # Logs
+      docker exec -it container bash    # Shell dans conteneur
+      
+      # Volumes
+      docker volume ls                  # Lister
+      docker volume create mydata       # Créer
+      docker run -v mydata:/data app    # Monter volume
+      docker run -v $(pwd):/app app     # Monter dossier
+      
+      # Réseau
+      docker network ls                 # Lister
+      docker network create mynet       # Créer
+      docker run --network mynet app    # Utiliser
+      
+      # Nettoyage
+      docker system prune               # Nettoyer
+      docker system prune -a            # Tout nettoyer
+      docker volume prune               # Volumes orphelins
+    tags:
+      - docker
+      - commandes
+      - conteneurs
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "GitHub Actions CI/CD"
+    question: "Comment configurer GitHub Actions pour CI/CD?"
+    answer: |
+      .github/workflows/ci.yml:
+      
+      name: CI
+      
+      on:
+        push:
+          branches: [main, develop]
+        pull_request:
+          branches: [main]
+      
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          
+          steps:
+            - uses: actions/checkout@v4
+            
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                python-version: '3.11'
+            
+            - name: Install dependencies
+              run: |
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+            
+            - name: Run tests
+              run: pytest --cov=src
+            
+            - name: Upload coverage
+              uses: codecov/codecov-action@v3
+      
+        build:
+          needs: test
+          runs-on: ubuntu-latest
+          if: github.ref == 'refs/heads/main'
+          
+          steps:
+            - uses: actions/checkout@v4
+            
+            - name: Build Docker image
+              run: docker build -t myapp:${{ github.sha }} .
+            
+            - name: Push to registry
+              run: |
+                docker tag myapp:${{ github.sha }} registry/myapp:latest
+                docker push registry/myapp:latest
+    tags:
+      - github
+      - ci/cd
+      - github actions
+      - automatisation
+    tools_used:
+      - write_file
+    difficulty: medium
+
+  - title: "Variables d'environnement et .env"
+    question: "Comment gérer les variables d'environnement?"
+    answer: |
+      Gestion des variables d'environnement:
+      
+      # Fichier .env
+      DATABASE_URL=postgresql://localhost:5432/mydb
+      SECRET_KEY=my-secret-key
+      DEBUG=true
+      API_KEY=xxx
+      
+      # .env.example (à commiter)
+      DATABASE_URL=postgresql://localhost:5432/mydb
+      SECRET_KEY=
+      DEBUG=false
+      API_KEY=
+      
+      # .gitignore
+      .env
+      .env.local
+      .env.*.local
+      
+      # Python (python-dotenv)
+      from dotenv import load_dotenv
+      import os
+      
+      load_dotenv()
+      
+      database_url = os.getenv("DATABASE_URL")
+      debug = os.getenv("DEBUG", "false").lower() == "true"
+      
+      # Node.js (dotenv)
+      require('dotenv').config();
+      
+      const dbUrl = process.env.DATABASE_URL;
+      const debug = process.env.DEBUG === 'true';
+      
+      # Docker Compose
+      services:
+        app:
+          env_file:
+            - .env
+          environment:
+            - NODE_ENV=production
+    tags:
+      - environnement
+      - dotenv
+      - configuration
+      - secrets
+    tools_used:
+      - write_file
+    difficulty: easy

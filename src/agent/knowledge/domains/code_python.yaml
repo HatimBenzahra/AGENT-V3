@@ -1,0 +1,411 @@
+category: code_python
+
+recipes:
+  - title: "Structure d'un projet Python"
+    question: "Quelle est la structure recommandée pour un projet Python?"
+    answer: |
+      Structure standard d'un projet Python:
+      
+      mon_projet/
+        ├── src/
+        │   └── mon_projet/
+        │       ├── __init__.py
+        │       ├── main.py
+        │       └── utils.py
+        ├── tests/
+        │   ├── __init__.py
+        │   └── test_main.py
+        ├── requirements.txt
+        ├── setup.py (ou pyproject.toml)
+        ├── README.md
+        └── .gitignore
+      
+      # Contenu de setup.py:
+      from setuptools import setup, find_packages
+      
+      setup(
+          name="mon_projet",
+          version="0.1.0",
+          packages=find_packages(where="src"),
+          package_dir={"": "src"},
+          python_requires=">=3.8",
+          install_requires=[
+              "requests>=2.25.0",
+          ],
+      )
+    tags:
+      - python
+      - structure
+      - projet
+    tools_used:
+      - write_file
+      - terminal
+    difficulty: easy
+
+  - title: "Créer un environnement virtuel Python"
+    question: "Comment créer et utiliser un environnement virtuel Python?"
+    answer: |
+      Gestion d'environnements virtuels:
+      
+      # Créer un venv
+      python -m venv venv
+      
+      # Activer (Linux/Mac)
+      source venv/bin/activate
+      
+      # Activer (Windows)
+      venv\Scripts\activate
+      
+      # Installer les dépendances
+      pip install -r requirements.txt
+      
+      # Sauvegarder les dépendances
+      pip freeze > requirements.txt
+      
+      # Désactiver
+      deactivate
+      
+      # Alternative avec conda:
+      conda create -n mon_env python=3.10
+      conda activate mon_env
+      conda install numpy pandas
+      conda env export > environment.yml
+    tags:
+      - python
+      - venv
+      - pip
+      - virtualenv
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "Lire et écrire des fichiers en Python"
+    question: "Comment lire et écrire des fichiers en Python?"
+    answer: |
+      Opérations sur fichiers:
+      
+      # Lecture texte
+      with open("file.txt", "r", encoding="utf-8") as f:
+          content = f.read()           # Tout le fichier
+          # ou
+          lines = f.readlines()        # Liste de lignes
+          # ou
+          for line in f:               # Ligne par ligne
+              print(line.strip())
+      
+      # Écriture texte
+      with open("file.txt", "w", encoding="utf-8") as f:
+          f.write("Hello\n")
+          f.writelines(["Line 1\n", "Line 2\n"])
+      
+      # Ajout
+      with open("file.txt", "a", encoding="utf-8") as f:
+          f.write("Nouvelle ligne\n")
+      
+      # Fichiers JSON
+      import json
+      
+      with open("data.json", "r") as f:
+          data = json.load(f)
+      
+      with open("data.json", "w") as f:
+          json.dump(data, f, indent=2)
+      
+      # Fichiers CSV
+      import csv
+      
+      with open("data.csv", "r") as f:
+          reader = csv.DictReader(f)
+          for row in reader:
+              print(row)
+      
+      # Path moderne
+      from pathlib import Path
+      
+      path = Path("file.txt")
+      content = path.read_text()
+      path.write_text("contenu")
+    tags:
+      - python
+      - fichiers
+      - io
+      - json
+      - csv
+    tools_used:
+      - write_file
+    difficulty: easy
+
+  - title: "Gestion des erreurs en Python"
+    question: "Comment gérer les exceptions en Python?"
+    answer: |
+      Gestion des exceptions:
+      
+      # Try/except basique
+      try:
+          result = 10 / 0
+      except ZeroDivisionError:
+          print("Division par zéro!")
+      
+      # Multiple exceptions
+      try:
+          data = some_operation()
+      except FileNotFoundError:
+          print("Fichier non trouvé")
+      except PermissionError:
+          print("Permission refusée")
+      except Exception as e:
+          print(f"Erreur inattendue: {e}")
+      
+      # Avec finally
+      try:
+          f = open("file.txt")
+          data = f.read()
+      except FileNotFoundError:
+          data = None
+      finally:
+          f.close()  # Toujours exécuté
+      
+      # Lever une exception
+      def validate_age(age):
+          if age < 0:
+              raise ValueError("L'âge ne peut pas être négatif")
+          return age
+      
+      # Exception personnalisée
+      class CustomError(Exception):
+          def __init__(self, message, code):
+              super().__init__(message)
+              self.code = code
+      
+      raise CustomError("Erreur spécifique", 42)
+    tags:
+      - python
+      - exceptions
+      - try
+      - except
+    tools_used:
+      - write_file
+    difficulty: easy
+
+  - title: "Classes et POO en Python"
+    question: "Comment utiliser les classes et la POO en Python?"
+    answer: |
+      Programmation orientée objet:
+      
+      # Classe simple
+      class Person:
+          def __init__(self, name, age):
+              self.name = name
+              self.age = age
+          
+          def greet(self):
+              return f"Bonjour, je suis {self.name}"
+          
+          def __str__(self):
+              return f"Person({self.name}, {self.age})"
+          
+          def __repr__(self):
+              return f"Person(name='{self.name}', age={self.age})"
+      
+      # Héritage
+      class Employee(Person):
+          def __init__(self, name, age, salary):
+              super().__init__(name, age)
+              self.salary = salary
+          
+          def greet(self):
+              return f"{super().greet()}, employé"
+      
+      # Propriétés
+      class Circle:
+          def __init__(self, radius):
+              self._radius = radius
+          
+          @property
+          def radius(self):
+              return self._radius
+          
+          @radius.setter
+          def radius(self, value):
+              if value < 0:
+                  raise ValueError("Rayon négatif")
+              self._radius = value
+          
+          @property
+          def area(self):
+              return 3.14159 * self._radius ** 2
+      
+      # Dataclass (Python 3.7+)
+      from dataclasses import dataclass
+      
+      @dataclass
+      class Point:
+          x: float
+          y: float
+          
+          def distance(self, other):
+              return ((self.x - other.x)**2 + (self.y - other.y)**2)**0.5
+    tags:
+      - python
+      - classes
+      - poo
+      - dataclass
+    tools_used:
+      - write_file
+    difficulty: medium
+
+  - title: "Async/Await en Python"
+    question: "Comment utiliser l'asynchrone en Python?"
+    answer: |
+      Programmation asynchrone:
+      
+      import asyncio
+      
+      # Fonction async
+      async def fetch_data(url):
+          await asyncio.sleep(1)  # Simule I/O
+          return f"Data from {url}"
+      
+      # Exécuter une coroutine
+      async def main():
+          result = await fetch_data("https://api.example.com")
+          print(result)
+      
+      asyncio.run(main())
+      
+      # Exécuter en parallèle
+      async def main():
+          tasks = [
+              fetch_data("url1"),
+              fetch_data("url2"),
+              fetch_data("url3"),
+          ]
+          results = await asyncio.gather(*tasks)
+          return results
+      
+      # Avec aiohttp pour HTTP
+      import aiohttp
+      
+      async def fetch_url(session, url):
+          async with session.get(url) as response:
+              return await response.text()
+      
+      async def main():
+          async with aiohttp.ClientSession() as session:
+              html = await fetch_url(session, "https://example.com")
+      
+      # Timeout
+      async def with_timeout():
+          try:
+              result = await asyncio.wait_for(
+                  slow_operation(),
+                  timeout=5.0
+              )
+          except asyncio.TimeoutError:
+              print("Timeout!")
+    tags:
+      - python
+      - async
+      - await
+      - asyncio
+    tools_used:
+      - write_file
+    difficulty: medium
+
+  - title: "Tests unitaires en Python"
+    question: "Comment écrire des tests unitaires en Python?"
+    answer: |
+      Tests avec pytest:
+      
+      # tests/test_calculator.py
+      import pytest
+      from calculator import add, divide
+      
+      def test_add():
+          assert add(2, 3) == 5
+          assert add(-1, 1) == 0
+      
+      def test_divide():
+          assert divide(10, 2) == 5
+      
+      def test_divide_by_zero():
+          with pytest.raises(ZeroDivisionError):
+              divide(10, 0)
+      
+      # Fixtures
+      @pytest.fixture
+      def sample_data():
+          return {"name": "test", "value": 42}
+      
+      def test_with_fixture(sample_data):
+          assert sample_data["name"] == "test"
+      
+      # Paramétrage
+      @pytest.mark.parametrize("a,b,expected", [
+          (1, 2, 3),
+          (0, 0, 0),
+          (-1, 1, 0),
+      ])
+      def test_add_parametrized(a, b, expected):
+          assert add(a, b) == expected
+      
+      # Exécuter les tests
+      # pytest                    # Tous les tests
+      # pytest tests/             # Un dossier
+      # pytest -v                 # Verbose
+      # pytest -x                 # Stop au premier échec
+      # pytest --cov=src          # Avec couverture
+    tags:
+      - python
+      - tests
+      - pytest
+      - unittest
+    tools_used:
+      - write_file
+      - terminal
+    difficulty: medium
+
+  - title: "Expressions régulières en Python"
+    question: "Comment utiliser les regex en Python?"
+    answer: |
+      Module re pour les expressions régulières:
+      
+      import re
+      
+      # Recherche simple
+      text = "Mon email est test@example.com"
+      match = re.search(r'\b[\w.-]+@[\w.-]+\.\w+\b', text)
+      if match:
+          print(match.group())  # test@example.com
+      
+      # Trouver toutes les occurrences
+      text = "Prix: 10€, 25€, 100€"
+      prices = re.findall(r'\d+', text)  # ['10', '25', '100']
+      
+      # Remplacement
+      text = "Hello World"
+      result = re.sub(r'World', 'Python', text)  # Hello Python
+      
+      # Compilation (meilleure performance)
+      pattern = re.compile(r'\d{2}/\d{2}/\d{4}')
+      dates = pattern.findall("Dates: 01/01/2024 et 15/03/2024")
+      
+      # Groupes de capture
+      text = "John Doe, 30 ans"
+      match = re.match(r'(\w+) (\w+), (\d+) ans', text)
+      if match:
+          prenom, nom, age = match.groups()
+          # ou: match.group(1), match.group(2), match.group(3)
+      
+      # Groupes nommés
+      pattern = r'(?P<jour>\d{2})/(?P<mois>\d{2})/(?P<annee>\d{4})'
+      match = re.search(pattern, "Date: 01/01/2024")
+      if match:
+          print(match.group('annee'))  # 2024
+    tags:
+      - python
+      - regex
+      - expressions régulières
+    tools_used:
+      - write_file
+    difficulty: medium

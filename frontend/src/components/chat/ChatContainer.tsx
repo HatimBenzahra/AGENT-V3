@@ -13,8 +13,17 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
-import { SuggestionPanel } from './SuggestionPanel';
-import { Message, ServerMessage, ClientMessage, ConnectionState } from '@/lib/types';
+import { ActivityFeed } from './ActivityFeed';
+import { PlanDisplay } from './PlanDisplay';
+import {
+  Message,
+  ServerMessage,
+  ClientMessage,
+  ConnectionState,
+  AgentStatus,
+  Activity,
+  ExecutionPlan,
+} from '@/lib/types';
 import { getWebSocketUrl } from '@/lib/api';
 
 interface ChatContainerProps {
@@ -25,235 +34,228 @@ interface ChatContainerProps {
 
 export function ChatContainer({ sessionId, onMenuClick, onSessionCreated }: ChatContainerProps) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentThought, setCurrentThought] = useState<string | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [currentPlan, setCurrentPlan] = useState<ExecutionPlan | null>(null);
+  const [agentStatus, setAgentStatus] = useState<AgentStatus>('idle');
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
-  
+
   const messageIdCounter = useRef(0);
+  const activityIdCounter = useRef(0);
   const wsRef = useRef<WebSocket | null>(null);
   const mountedRef = useRef(true);
-  
-  // Track the session we're actually connected to (not the prop)
   const connectedSessionRef = useRef<string | null>(null);
   const onSessionCreatedRef = useRef(onSessionCreated);
-  
-  // Update callback ref
+
   useEffect(() => {
     onSessionCreatedRef.current = onSessionCreated;
   }, [onSessionCreated]);
 
-  const generateId = () => {
+  const generateMessageId = () => {
     messageIdCounter.current += 1;
     return `msg-${Date.now()}-${messageIdCounter.current}`;
+  };
+
+  const generateActivityId = () => {
+    activityIdCounter.current += 1;
+    return `act-${Date.now()}-${activityIdCounter.current}`;
   };
 
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
     if (!mountedRef.current) return;
     setMessages((prev) => [
       ...prev,
-      {
-        ...message,
-        id: generateId(),
-        timestamp: new Date(),
-      },
+      { ...message, id: generateMessageId(), timestamp: new Date() },
     ]);
   }, []);
 
-  // Connect WebSocket - only call this when we actually want to connect
+  const addActivity = useCallback((activity: Omit<Activity, 'id' | 'timestamp'>) => {
+    if (!mountedRef.current) return;
+    const newActivity = { ...activity, id: generateActivityId(), timestamp: new Date() };
+    setActivities((prev) => [...prev, newActivity]);
+    return newActivity.id;
+  }, []);
+
+  const updateActivity = useCallback((id: string, updates: Partial<Activity>) => {
+    if (!mountedRef.current) return;
+    setActivities((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
+    );
+  }, []);
+
   const connect = useCallback((targetSessionId: string | null) => {
-    // Don't reconnect if already connected to this session
     if (wsRef.current?.readyState === WebSocket.OPEN && connectedSessionRef.current === targetSessionId) {
-      console.log('Already connected to this session');
       return;
     }
-    
-    // Close existing connection
+
     if (wsRef.current) {
-      console.log('Closing existing connection');
       wsRef.current.close();
       wsRef.current = null;
     }
 
     const url = getWebSocketUrl(targetSessionId || undefined);
-    console.log('Connecting to:', url);
     setConnectionState('connecting');
     connectedSessionRef.current = targetSessionId;
 
     const ws = new WebSocket(url);
+    let currentActivityId: string | null = null;
 
     ws.onopen = () => {
-      console.log('WebSocket opened');
-      if (mountedRef.current) {
-        setConnectionState('connected');
-      }
+      if (mountedRef.current) setConnectionState('connected');
     };
 
     ws.onmessage = (event) => {
       try {
         const data: ServerMessage = JSON.parse(event.data);
-        console.log('Received message:', data.type);
-        
+        console.log('[WS] Received:', data.type, data);
         if (!mountedRef.current) return;
-        
+
         switch (data.type) {
           case 'connected':
-            console.log('Connected to session:', data.session_id);
             break;
 
           case 'initializing':
-            setIsProcessing(true);
-            addMessage({
-              type: 'system',
-              content: data.message || 'Initializing session...',
-            });
+            addMessage({ type: 'system', content: data.message || 'Starting session...' });
             break;
 
           case 'session_ready':
-            console.log('Session ready:', data.session_id);
-            // Update our connected session ref - DON'T trigger reconnect
             connectedSessionRef.current = data.session_id;
-            // Notify parent (this will update sessionId prop, but we won't reconnect)
             onSessionCreatedRef.current(data.session_id);
-            addMessage({
-              type: 'system',
-              content: `Session ready: ${data.session_id}`,
-            });
             break;
 
-          case 'processing':
-            setIsProcessing(true);
-            setCurrentThought(null);
+          case 'status':
+            setAgentStatus(data.status);
             break;
 
-          case 'thought':
-            setCurrentThought(data.content);
-            addMessage({
-              type: 'thought',
-              content: data.content,
-            });
+          case 'plan_proposal':
+            setCurrentPlan(data.plan);
+            setAgentStatus('idle');
+            break;
+
+          case 'plan_updated':
+            setCurrentPlan(data.plan);
+            break;
+
+          case 'plan_started':
+            setCurrentPlan(data.plan);
+            setAgentStatus('working');
+            break;
+
+          case 'activity':
+            if (data.status === 'running') {
+              currentActivityId = addActivity({
+                type: data.activity_type,
+                tool: data.tool,
+                params: data.params,
+                status: 'running',
+              }) || null;
+            } else if (currentActivityId) {
+              updateActivity(currentActivityId, {
+                status: data.status,
+                result: data.result,
+                error: data.error,
+                fileCreated: data.file_created,
+              });
+              currentActivityId = null;
+            }
             break;
 
           case 'action':
-            addMessage({
-              type: 'action',
-              content: `Using ${data.tool}`,
+            currentActivityId = addActivity({
+              type: 'tool',
               tool: data.tool,
               params: data.params,
-            });
+              status: 'running',
+            }) || null;
             break;
 
           case 'observation':
-            addMessage({
-              type: 'observation',
-              content: data.content,
-              tool: data.tool,
-              fileCreated: data.file_created,
-            });
+            if (currentActivityId) {
+              updateActivity(currentActivityId, {
+                status: 'completed',
+                result: data.content,
+                fileCreated: data.file_created,
+              });
+              currentActivityId = null;
+            }
             break;
 
           case 'final_answer':
-            setIsProcessing(false);
-            setCurrentThought(null);
-            addMessage({
-              type: 'final_answer',
-              content: data.content,
-            });
+            setAgentStatus('idle');
+            setActivities([]);
+            addMessage({ type: 'assistant', content: data.content });
             break;
 
           case 'error':
-            setIsProcessing(false);
-            addMessage({
-              type: 'error',
-              content: data.message,
-            });
+            setAgentStatus('idle');
+            addMessage({ type: 'system', content: `Error: ${data.message}` });
             break;
 
           case 'interrupted':
-            setIsProcessing(false);
-            setCurrentThought(null);
-            addMessage({
-              type: 'system',
-              content: 'Task interrupted by user',
-            });
+            setAgentStatus('idle');
+            setActivities([]);
+            addMessage({ type: 'system', content: 'Task interrupted' });
+            break;
+
+          case 'interrupting':
+            addMessage({ type: 'system', content: 'Stopping...' });
             break;
 
           case 'complete':
-            setIsProcessing(false);
-            setCurrentThought(null);
+            setAgentStatus('idle');
+            setActivities([]);
+            if (currentPlan) {
+              setCurrentPlan({ ...currentPlan, status: 'completed' });
+            }
             break;
-            
-          case 'suggestion_received':
-            addMessage({
-              type: 'system',
-              content: `Suggestion queued: "${data.content}"`,
-            });
+
+          case 'processing':
+            setAgentStatus('working');
             break;
-            
-          case 'suggestion_applied':
-            addMessage({
-              type: 'system',
-              content: `Suggestion applied: "${data.content}"`,
-            });
-            break;
-            
-          case 'recovery':
-            addMessage({
-              type: 'system',
-              content: data.content || 'Self-healing in progress...',
-            });
+
+          case 'thought':
             break;
         }
       } catch (error) {
-        console.error('Failed to parse message:', error);
+        console.error('Parse error:', error);
       }
     };
 
-    ws.onerror = (event) => {
-      console.error('WebSocket error:', event);
-      if (mountedRef.current) {
-        setConnectionState('error');
-      }
+    ws.onerror = (error) => {
+      console.error('[WS] Error:', error);
+      if (mountedRef.current) setConnectionState('error');
     };
 
     ws.onclose = (event) => {
-      console.log('WebSocket closed:', event.code);
-      if (mountedRef.current) {
-        setConnectionState('disconnected');
-      }
+      console.log('[WS] Closed:', event.code, event.reason);
+      if (mountedRef.current) setConnectionState('disconnected');
     };
 
     wsRef.current = ws;
-  }, [addMessage]);
+  }, [addMessage, addActivity, updateActivity, currentPlan]);
 
   const sendMessage = useCallback((message: ClientMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('Sending:', message);
+      console.log('[WS] Sending:', message);
       wsRef.current.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket not open, state:', wsRef.current?.readyState);
+      console.error('[WS] Cannot send - not connected');
     }
   }, []);
 
-  // Connect on mount and when sessionId changes FROM USER ACTION (not from session_ready)
   useEffect(() => {
     mountedRef.current = true;
-    
-    // Only reconnect if the sessionId prop differs from what we're connected to
-    // This prevents reconnection when session_ready updates the parent state
-    if (sessionId !== connectedSessionRef.current) {
-      console.log(`Session changed: ${connectedSessionRef.current} -> ${sessionId}, reconnecting...`);
-      setMessages([]); // Clear messages on session change
+    const shouldConnect = sessionId !== connectedSessionRef.current || 
+      (sessionId === null && wsRef.current === null);
+    if (shouldConnect) {
+      setMessages([]);
+      setActivities([]);
+      setCurrentPlan(null);
+      setAgentStatus('idle');
       connect(sessionId);
-    } else {
-      console.log('Session unchanged, not reconnecting');
     }
-
-    return () => {
-      mountedRef.current = false;
-    };
+    return () => { mountedRef.current = false; };
   }, [sessionId, connect]);
 
-  // Cleanup on unmount only
   useEffect(() => {
     return () => {
       if (wsRef.current) {
@@ -264,45 +266,49 @@ export function ChatContainer({ sessionId, onMenuClick, onSessionCreated }: Chat
   }, []);
 
   const handleSendMessage = (content: string) => {
-    addMessage({
-      type: 'user',
-      content,
-    });
+    addMessage({ type: 'user', content });
     sendMessage({ type: 'chat', content });
   };
 
-  const handleInterrupt = () => {
-    sendMessage({ type: 'interrupt' });
+  const handleInterrupt = () => sendMessage({ type: 'interrupt' });
+
+  const handleApprovePlan = () => {
+    if (currentPlan) {
+      setCurrentPlan({ ...currentPlan, status: 'approved' });
+      sendMessage({ type: 'approve_plan' });
+    }
   };
 
-  const handleSuggestion = (suggestion: string) => {
-    sendMessage({ type: 'suggestion', content: suggestion });
+  const handleUpdatePlan = (plan: ExecutionPlan) => {
+    setCurrentPlan(plan);
+    sendMessage({ type: 'update_plan', plan });
   };
 
   const getConnectionColor = () => {
     switch (connectionState) {
-      case 'connected':
-        return 'success';
-      case 'connecting':
-        return 'warning';
-      case 'error':
-        return 'error';
-      default:
-        return 'default';
+      case 'connected': return 'success';
+      case 'connecting': return 'warning';
+      case 'error': return 'error';
+      default: return 'default';
     }
   };
 
+  const isWorking = agentStatus !== 'idle';
+  const showPlan = currentPlan && currentPlan.status === 'pending';
+  const showActivities = isWorking && activities.length > 0;
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={onMenuClick} sx={{ mr: 2 }}>
+        <Toolbar variant="dense">
+          <IconButton edge="start" color="inherit" onClick={onMenuClick} sx={{ mr: 1 }}>
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            ReAct Agent
+
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Agent
           </Typography>
+
           <Chip
             label={connectionState}
             color={getConnectionColor()}
@@ -310,34 +316,34 @@ export function ChatContainer({ sessionId, onMenuClick, onSessionCreated }: Chat
             sx={{ textTransform: 'capitalize' }}
           />
         </Toolbar>
-        {isProcessing && <LinearProgress color="primary" />}
+        {isWorking && <LinearProgress color="primary" />}
       </AppBar>
 
-      {/* Messages */}
-      <Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
-        <MessageList
-          messages={messages}
-          currentThought={currentThought}
-          isProcessing={isProcessing}
-        />
-        
-        {/* Suggestion Panel - appears during processing */}
-        <SuggestionPanel
-          isProcessing={isProcessing}
-          onSuggest={handleSuggestion}
-          onInterrupt={handleInterrupt}
-          currentThought={currentThought}
-        />
-      </Box>
+      <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <Box sx={{ flexGrow: 1, overflow: 'auto', minHeight: 0, p: 2 }}>
+          <MessageList messages={messages} />
+          
+          {showPlan && (
+            <PlanDisplay
+              plan={currentPlan}
+              onApprove={handleApprovePlan}
+              onUpdate={handleUpdatePlan}
+            />
+          )}
+          
+          {showActivities && (
+            <ActivityFeed activities={activities} status={agentStatus} />
+          )}
+        </Box>
 
-      {/* Input */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <MessageInput
-          onSend={handleSendMessage}
-          onInterrupt={handleInterrupt}
-          isProcessing={isProcessing}
-          disabled={connectionState !== 'connected'}
-        />
+        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
+          <MessageInput
+            onSend={handleSendMessage}
+            onInterrupt={handleInterrupt}
+            isProcessing={isWorking}
+            disabled={connectionState !== 'connected'}
+          />
+        </Box>
       </Box>
     </Box>
   );

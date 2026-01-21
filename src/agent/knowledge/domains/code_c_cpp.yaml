@@ -1,0 +1,403 @@
+category: code_c_cpp
+
+recipes:
+  - title: "Structure d'un programme C"
+    question: "Quelle est la structure de base d'un programme C?"
+    answer: |
+      Structure minimale d'un programme C:
+      
+      #include <stdio.h>
+      #include <stdlib.h>
+      
+      int main(int argc, char *argv[]) {
+          // Code ici
+          printf("Hello World\n");
+          return 0;
+      }
+      
+      Organisation recommandée:
+      projet/
+        ├── src/           # Code source .c
+        ├── include/       # Headers .h
+        ├── obj/           # Fichiers objets .o
+        ├── bin/           # Exécutables
+        ├── tests/         # Tests
+        └── Makefile
+    tags:
+      - c
+      - structure
+      - hello world
+    tools_used:
+      - write_file
+      - terminal
+    difficulty: easy
+
+  - title: "Créer un Makefile"
+    question: "Comment créer un Makefile pour un projet C?"
+    answer: |
+      Makefile standard pour projet C:
+      
+      CC = gcc
+      CFLAGS = -Wall -Wextra -g
+      LDFLAGS =
+      
+      SRCDIR = src
+      OBJDIR = obj
+      BINDIR = bin
+      INCDIR = include
+      
+      SOURCES = $(wildcard $(SRCDIR)/*.c)
+      OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+      TARGET = $(BINDIR)/program
+      
+      .PHONY: all clean
+      
+      all: $(TARGET)
+      
+      $(TARGET): $(OBJECTS) | $(BINDIR)
+      	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
+      
+      $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+      	$(CC) $(CFLAGS) -I$(INCDIR) -c $< -o $@
+      
+      $(BINDIR) $(OBJDIR):
+      	mkdir -p $@
+      
+      clean:
+      	rm -rf $(OBJDIR) $(BINDIR)
+      
+      run: $(TARGET)
+      	./$(TARGET)
+    tags:
+      - c
+      - makefile
+      - compilation
+    tools_used:
+      - write_file
+      - terminal
+    difficulty: medium
+
+  - title: "Gestion de la mémoire en C"
+    question: "Comment gérer la mémoire dynamique en C?"
+    answer: |
+      Fonctions de base pour la mémoire:
+      
+      #include <stdlib.h>
+      
+      // Allocation
+      int *ptr = malloc(sizeof(int));         // Un entier
+      int *arr = malloc(n * sizeof(int));     // Tableau de n entiers
+      int *arr2 = calloc(n, sizeof(int));     // Initialisé à 0
+      
+      // Réallocation
+      arr = realloc(arr, (n+10) * sizeof(int));
+      
+      // Libération (TOUJOURS!)
+      free(ptr);
+      free(arr);
+      
+      // Pattern recommandé:
+      int *buffer = NULL;
+      buffer = malloc(SIZE);
+      if (buffer == NULL) {
+          perror("malloc failed");
+          exit(EXIT_FAILURE);
+      }
+      // ... utilisation ...
+      free(buffer);
+      buffer = NULL;  // Évite le double-free
+      
+      // Outils de détection de fuites:
+      // valgrind --leak-check=full ./program
+    tags:
+      - c
+      - memory
+      - malloc
+      - free
+      - valgrind
+    tools_used:
+      - terminal
+    difficulty: medium
+
+  - title: "Lire et écrire des fichiers en C"
+    question: "Comment lire et écrire des fichiers en C?"
+    answer: |
+      Opérations sur fichiers:
+      
+      #include <stdio.h>
+      
+      // Ouverture
+      FILE *f = fopen("file.txt", "r");   // Lecture
+      FILE *f = fopen("file.txt", "w");   // Écriture (écrase)
+      FILE *f = fopen("file.txt", "a");   // Ajout
+      FILE *f = fopen("file.bin", "rb");  // Binaire lecture
+      
+      if (f == NULL) {
+          perror("Erreur ouverture fichier");
+          return -1;
+      }
+      
+      // Lecture texte
+      char line[256];
+      while (fgets(line, sizeof(line), f)) {
+          printf("%s", line);
+      }
+      
+      // Écriture texte
+      fprintf(f, "Valeur: %d\n", 42);
+      fputs("Ligne\n", f);
+      
+      // Lecture/écriture binaire
+      int data[100];
+      fread(data, sizeof(int), 100, f);
+      fwrite(data, sizeof(int), 100, f);
+      
+      // Fermeture (TOUJOURS!)
+      fclose(f);
+    tags:
+      - c
+      - fichiers
+      - fopen
+      - fread
+      - fwrite
+    tools_used:
+      - write_file
+    difficulty: easy
+
+  - title: "Structures et typedef en C"
+    question: "Comment utiliser les structures en C?"
+    answer: |
+      Définition et utilisation de structures:
+      
+      // Définition simple
+      struct Point {
+          int x;
+          int y;
+      };
+      struct Point p1 = {10, 20};
+      
+      // Avec typedef (recommandé)
+      typedef struct {
+          char nom[50];
+          int age;
+          float salaire;
+      } Employe;
+      
+      Employe e1 = {"Jean", 30, 3500.0};
+      Employe e2 = {.nom = "Marie", .age = 25};
+      
+      // Accès aux membres
+      printf("%s a %d ans\n", e1.nom, e1.age);
+      
+      // Avec pointeur
+      Employe *ptr = &e1;
+      printf("%s\n", ptr->nom);  // ou (*ptr).nom
+      
+      // Allocation dynamique
+      Employe *employes = malloc(10 * sizeof(Employe));
+      employes[0].age = 25;
+      free(employes);
+    tags:
+      - c
+      - struct
+      - typedef
+    tools_used:
+      - write_file
+    difficulty: easy
+
+  - title: "Implémenter une liste chaînée en C"
+    question: "Comment implémenter une liste chaînée en C?"
+    answer: |
+      Implémentation basique de liste chaînée:
+      
+      typedef struct Node {
+          int data;
+          struct Node *next;
+      } Node;
+      
+      typedef struct {
+          Node *head;
+          size_t size;
+      } LinkedList;
+      
+      LinkedList *list_create() {
+          LinkedList *list = malloc(sizeof(LinkedList));
+          list->head = NULL;
+          list->size = 0;
+          return list;
+      }
+      
+      void list_push_front(LinkedList *list, int data) {
+          Node *node = malloc(sizeof(Node));
+          node->data = data;
+          node->next = list->head;
+          list->head = node;
+          list->size++;
+      }
+      
+      void list_push_back(LinkedList *list, int data) {
+          Node *node = malloc(sizeof(Node));
+          node->data = data;
+          node->next = NULL;
+          
+          if (list->head == NULL) {
+              list->head = node;
+          } else {
+              Node *current = list->head;
+              while (current->next != NULL) {
+                  current = current->next;
+              }
+              current->next = node;
+          }
+          list->size++;
+      }
+      
+      void list_free(LinkedList *list) {
+          Node *current = list->head;
+          while (current != NULL) {
+              Node *next = current->next;
+              free(current);
+              current = next;
+          }
+          free(list);
+      }
+    tags:
+      - c
+      - structures de données
+      - liste chaînée
+    tools_used:
+      - write_file
+    difficulty: medium
+
+  - title: "Arguments de ligne de commande en C"
+    question: "Comment traiter les arguments de ligne de commande en C?"
+    answer: |
+      Traitement des arguments:
+      
+      #include <stdio.h>
+      #include <stdlib.h>
+      #include <string.h>
+      #include <getopt.h>
+      
+      int main(int argc, char *argv[]) {
+          // Méthode simple
+          if (argc < 2) {
+              printf("Usage: %s <arg1> [arg2...]\n", argv[0]);
+              return 1;
+          }
+          
+          for (int i = 1; i < argc; i++) {
+              printf("Argument %d: %s\n", i, argv[i]);
+          }
+          
+          // Avec getopt (options courtes)
+          int opt;
+          char *input = NULL;
+          int verbose = 0;
+          
+          while ((opt = getopt(argc, argv, "vi:h")) != -1) {
+              switch (opt) {
+                  case 'v':
+                      verbose = 1;
+                      break;
+                  case 'i':
+                      input = optarg;
+                      break;
+                  case 'h':
+                  default:
+                      printf("Usage: %s [-v] [-i input]\n", argv[0]);
+                      return 1;
+              }
+          }
+          
+          // Arguments restants: argv[optind] à argv[argc-1]
+          return 0;
+      }
+    tags:
+      - c
+      - arguments
+      - getopt
+      - cli
+    tools_used:
+      - write_file
+    difficulty: easy
+
+  - title: "Compiler avec GCC"
+    question: "Comment compiler un programme C avec GCC?"
+    answer: |
+      Commandes GCC courantes:
+      
+      # Compilation simple
+      gcc main.c -o program
+      
+      # Avec warnings (recommandé)
+      gcc -Wall -Wextra -Werror main.c -o program
+      
+      # Mode debug (pour gdb/valgrind)
+      gcc -g main.c -o program
+      
+      # Optimisation
+      gcc -O2 main.c -o program      # Normal
+      gcc -O3 main.c -o program      # Agressif
+      gcc -Os main.c -o program      # Taille
+      
+      # Plusieurs fichiers
+      gcc -c file1.c -o file1.o
+      gcc -c file2.c -o file2.o
+      gcc file1.o file2.o -o program
+      
+      # Avec bibliothèques
+      gcc main.c -o program -lm          # math
+      gcc main.c -o program -lpthread    # threads
+      
+      # Avec include path
+      gcc -I./include main.c -o program
+      
+      # Standard C spécifique
+      gcc -std=c99 main.c -o program
+      gcc -std=c11 main.c -o program
+    tags:
+      - c
+      - gcc
+      - compilation
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "Debug avec GDB"
+    question: "Comment utiliser GDB pour déboguer un programme C?"
+    answer: |
+      Utilisation de GDB:
+      
+      # Compiler avec -g
+      gcc -g program.c -o program
+      
+      # Lancer GDB
+      gdb ./program
+      
+      # Commandes principales:
+      (gdb) run                    # Exécuter
+      (gdb) run arg1 arg2          # Avec arguments
+      (gdb) break main             # Breakpoint sur fonction
+      (gdb) break file.c:42        # Breakpoint sur ligne
+      (gdb) continue               # Continuer jusqu'au prochain breakpoint
+      (gdb) next                   # Ligne suivante (step over)
+      (gdb) step                   # Ligne suivante (step into)
+      (gdb) print var              # Afficher variable
+      (gdb) print *ptr             # Déréférencer pointeur
+      (gdb) print arr[0]@10        # Afficher 10 éléments
+      (gdb) backtrace              # Stack trace
+      (gdb) info locals            # Variables locales
+      (gdb) watch var              # Breakpoint sur modification
+      (gdb) quit                   # Quitter
+      
+      # Analyse post-mortem
+      ulimit -c unlimited          # Activer core dumps
+      gdb ./program core           # Analyser core dump
+    tags:
+      - c
+      - debug
+      - gdb
+    tools_used:
+      - terminal
+    difficulty: medium

@@ -14,19 +14,12 @@ if TYPE_CHECKING:
 
 
 class ReActAgent:
-    """ReAct (Reasoning + Acting) Agent implementation."""
 
     def __init__(
         self,
         tool_registry: ToolRegistry,
         conversation_context: Optional["ConversationContext"] = None,
     ) -> None:
-        """Initialize ReAct agent.
-
-        Args:
-            tool_registry: Registry of available tools.
-            conversation_context: Optional conversation context for persistence.
-        """
         self.llm = LLMClient()
         self.tools = tool_registry
         self.max_iterations = Config.MAX_ITERATIONS
@@ -34,7 +27,6 @@ class ReActAgent:
         self.recovery_manager = RecoveryManager(max_retries=3)
 
     def _build_system_prompt(self) -> str:
-        """Build the system prompt for ReAct reasoning."""
         tools = self.tools.get_tools_schema()
         tool_descriptions = []
         for tool in tools:
@@ -47,47 +39,35 @@ class ReActAgent:
         
         tool_lines = "\n".join(tool_descriptions)
         
-        return f"""You are an AI agent with Python/Docker environment.
+        return f"""You are an autonomous AI agent. Execute tasks efficiently using the available tools.
 
-TOOLS:
+AVAILABLE TOOLS:
 {tool_lines}
 
-FORMAT (strict):
-Thought: <brief reasoning>
+RESPONSE FORMAT (strict - follow exactly):
+Thought: <your reasoning - keep it brief>
 Action: tool_name({{"param": "value"}})
 
-End with:
-Action: Final Answer: <summary with file paths>
+When task is complete:
+Action: Final Answer: <your response to the user>
 
-CRITICAL RULES:
-1. ONE action per response. Wait for Observation.
-2. USE YOUR KNOWLEDGE directly for content (articles, reports, data). DON'T search unless you truly need current info.
-3. For documents/articles: Write content directly with write_file. You know enough!
-4. For charts: Write a Python script with matplotlib, then execute it.
-5. For PDFs: Use reportlab (pip install reportlab first).
-6. NEVER repeat the same action twice.
-7. Be EFFICIENT - minimize iterations.
+RULES:
+1. ONE action per response. Wait for the observation before continuing.
+2. Be efficient - don't repeat failed actions, try alternatives.
+3. For file operations, verify paths exist before writing.
+4. For web searches, extract key information and cite sources.
+5. When creating documents (PDF, LaTeX), verify compilation succeeds.
+6. Keep Final Answer concise but include all relevant file paths.
 
-DOCUMENT STRATEGY (3+ pages):
-1. Write intro section -> write_file("sections/01_intro.md", content)
-2. Write each section similarly (02, 03...)
-3. Create Python script to combine sections + generate charts
-4. Generate final PDF
-
-CHARTS EXAMPLE (matplotlib):
-```python
-import matplotlib.pyplot as plt
-data = {{"2025": 50, "2026": 75}}
-plt.bar(data.keys(), data.values())
-plt.savefig("chart.png")
-```
-
-Remember: You have extensive knowledge. Create content directly!"""
+IMPORTANT:
+- Never invent data. Use web_search for facts.
+- If a tool fails, diagnose and fix the issue.
+- Always verify your work before declaring success.
+"""
 
     def _parse_action(
         self, response: str
     ) -> Tuple[Optional[str], Optional[str], Optional[Dict[str, Any]]]:
-        """Parse action from LLM response."""
         action_match = re.search(r"Action:\s*(.+)", response, re.IGNORECASE)
         if not action_match:
             return None, None, None
@@ -98,7 +78,6 @@ Remember: You have extensive knowledge. Create content directly!"""
         if "Final Answer:" in action_text:
             return "final_answer", action_text.split("Final Answer:", 1)[1].strip(), None
 
-        # Match tool call: tool_name({"param": "value"})
         tool_match = re.match(r"(\w+)\((.*)\)", action_text, re.DOTALL)
         if tool_match:
             tool_name = tool_match.group(1)
@@ -112,41 +91,26 @@ Remember: You have extensive knowledge. Create content directly!"""
         return None, None, None
 
     def _get_conversation_history_messages(self) -> List[Dict[str, str]]:
-        """Get previous conversation messages for context."""
         if not self.conversation_context:
             return []
-        
-        # Get recent messages to provide context
         history = self.conversation_context.get_recent_messages(count=10)
         return history
 
     async def run(self, task: str) -> AgentState:
-        """Run the ReAct loop for a given task.
-
-        Args:
-            task: The task to execute.
-
-        Returns:
-            AgentState with the results.
-        """
         state = AgentState(task=task)
-        
-        # Reset recovery manager for new task
         self.recovery_manager.reset()
 
-        # Build initial messages with conversation history for context
         messages = [
             {"role": "system", "content": self._build_system_prompt()},
         ]
 
-        # Add recent conversation history for context
         history = self._get_conversation_history_messages()
         if history:
             messages.append({
                 "role": "system",
                 "content": "Previous conversation context:\n" + "\n".join(
                     [f"{m['role']}: {m['content'][:200]}..." if len(m['content']) > 200 else f"{m['role']}: {m['content']}"
-                     for m in history[-5:]]  # Last 5 messages
+                     for m in history[-5:]]
                 )
             })
 
@@ -155,15 +119,13 @@ Remember: You have extensive knowledge. Create content directly!"""
         tool_names = {tool.name for tool in self.tools.get_all_tools()}
         react_steps = []
         
-        # Loop detection: track recent actions to detect repetition
         recent_actions: List[str] = []
-        max_repeated_actions = 2  # Stop if same action repeated more than 2 times
+        max_repeated_actions = 2
 
         while state.iteration < self.max_iterations and not state.is_complete:
             state.iteration += 1
             response = await self.llm.chat_completion(messages)
 
-            # Extract thought
             thought_match = re.search(
                 r"Thought:\s*(.+?)(?=Action:|$)", response, re.DOTALL | re.IGNORECASE
             )
@@ -173,7 +135,6 @@ Remember: You have extensive knowledge. Create content directly!"""
                 messages.append({"role": "assistant", "content": f"Thought: {thought}"})
                 react_steps.append({"type": "thought", "content": thought})
 
-            # Parse and execute action
             action_type, final_answer, tool_params = self._parse_action(response)
 
             if action_type == "final_answer":
@@ -188,27 +149,22 @@ Remember: You have extensive knowledge. Create content directly!"""
                 action_payload = json.dumps(tool_params or {}, ensure_ascii=False)
                 current_action = f"{action_type}:{action_payload}"
                 
-                # Check for repeated actions (loop detection)
                 repeat_count = recent_actions.count(current_action)
                 if repeat_count >= max_repeated_actions:
                     loop_msg = (
-                        f"LOOP DETECTED: You have repeated the same action '{action_type}' {repeat_count + 1} times. "
-                        f"The task appears to be complete. Please provide a Final Answer summarizing what was done, "
-                        f"or try a COMPLETELY DIFFERENT approach if the task is not complete."
+                        f"LOOP DETECTED: You have repeated '{action_type}' {repeat_count + 1} times. "
+                        f"Provide a Final Answer or try a DIFFERENT approach."
                     )
                     messages.append({"role": "user", "content": f"Observation: {loop_msg}"})
                     react_steps.append({"type": "error", "content": loop_msg})
                     
-                    # Force stop after too many repeats
                     if repeat_count >= max_repeated_actions + 1:
                         state.set_final_answer(f"Task stopped due to repeated actions. Last action: {action_type}")
                         react_steps.append({"type": "final_answer", "content": state.final_answer})
                         break
                     continue
                 
-                # Track this action
                 recent_actions.append(current_action)
-                # Keep only last 10 actions
                 if len(recent_actions) > 10:
                     recent_actions.pop(0)
                 
@@ -222,10 +178,8 @@ Remember: You have extensive knowledge. Create content directly!"""
 
                     result = await tool.execute(**(tool_params or {}))
                     
-                    # Check if result indicates an error that can be recovered
                     error_type, _ = ErrorPatterns.detect_error_type(result)
                     if error_type.value != "unknown" and "Error" in result:
-                        # Try to recover
                         recovery_action = self.recovery_manager.analyze_error(
                             error_message=result,
                             action=action_type,
@@ -233,19 +187,16 @@ Remember: You have extensive knowledge. Create content directly!"""
                         )
                         
                         if recovery_action and recovery_action.action_type == "execute_command":
-                            # Execute recovery action
                             recovery_msg = f"[SELF-HEALING] Detected {error_type.value}. Trying: {recovery_action.description}"
                             messages.append({"role": "user", "content": f"Observation: {recovery_msg}"})
                             react_steps.append({"type": "recovery", "content": recovery_msg})
                             
-                            # Execute the recovery command
                             recovery_tool = self.tools.get_tool("execute_command")
                             if recovery_tool:
                                 recovery_result = await recovery_tool.execute(**recovery_action.params)
                                 messages.append({"role": "user", "content": f"Recovery result: {recovery_result}"})
                                 react_steps.append({"type": "observation", "content": f"Recovery: {recovery_result}"})
                                 
-                                # Now retry the original action
                                 retry_result = await tool.execute(**(tool_params or {}))
                                 state.add_observation(retry_result)
                                 messages.append({"role": "user", "content": f"Observation (retry): {retry_result}"})
@@ -259,7 +210,6 @@ Remember: You have extensive knowledge. Create content directly!"""
                 except Exception as exc:
                     error_msg = f"Error executing {action_type}: {exc}"
                     
-                    # Try to recover from the exception
                     recovery_action = self.recovery_manager.analyze_error(
                         error_message=str(exc),
                         action=action_type,
@@ -296,7 +246,6 @@ Remember: You have extensive knowledge. Create content directly!"""
         if not state.is_complete and state.iteration >= self.max_iterations:
             state.set_final_answer("Maximum iterations reached. Unable to complete the task.")
 
-        # Save to conversation context if available
         if self.conversation_context:
             self.conversation_context.add_user_message(task)
             self.conversation_context.add_assistant_message(

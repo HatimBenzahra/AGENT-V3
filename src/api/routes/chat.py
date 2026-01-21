@@ -50,8 +50,8 @@ async def websocket_chat(
                 print(f"[WS] Received: {data[:100]}...")
                 message = json.loads(data)
                 
-                # Lazy initialize session on first chat message
-                if message.get("type") == "chat" and not session_initialized:
+                # Lazy initialize session on first chat or request_plan message
+                if message.get("type") in ("chat", "request_plan") and not session_initialized:
                     print(f"[WS] Initializing session...")
                     await send_message(websocket, "initializing", message="Starting session...")
                     
@@ -82,12 +82,11 @@ async def websocket_chat(
                     )
                     print(f"[WS] Session ready: {actual_session_id}")
                 
-                # Handle the message if session is ready
                 if session_initialized:
                     print(f"[WS] Handling message...")
                     await handle_websocket_message(websocket, message, state)
-                elif message.get("type") != "chat":
-                    await send_message(websocket, "error", message="Send a chat message to start the session")
+                elif message.get("type") not in ("chat", "request_plan"):
+                    await send_message(websocket, "error", message="Send a chat or project request to start the session")
                     
             except json.JSONDecodeError as e:
                 print(f"[WS] JSON decode error: {e}")

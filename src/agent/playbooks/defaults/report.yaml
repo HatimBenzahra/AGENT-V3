@@ -1,0 +1,320 @@
+id: playbook_report
+name: Business/Technical Report
+deliverable_type: report
+triggers:
+  - rapport
+  - report
+  - document
+  - pdf
+  - article
+  - etude
+  - analyse
+  - synthese
+  - memoire
+  - dossier
+  - recherche
+  - investigation
+  - benchmark
+  - comparatif
+
+default_sections:
+  - id: research_phase
+    title: Phase de recherche
+    section_type: text
+    description: Collecte et analyse des informations
+    optional: false
+    order: 1
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      1. Identifier les questions cles a repondre
+      2. Faire des recherches web pour chaque question
+      3. Pour CHAQUE source:
+         - Noter l'URL
+         - Extraire les informations pertinentes
+         - Evaluer la fiabilite (site officiel, date, auteur)
+      4. Croiser les informations de plusieurs sources
+      5. Identifier les donnees manquantes
+      6. Creer un fichier notes_recherche.md avec toutes les sources
+
+  - id: cover
+    title: Page de garde
+    section_type: cover
+    description: Titre, auteur, date, logo
+    optional: false
+    order: 2
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Creer une page de garde professionnelle avec:
+      - Titre clair et descriptif
+      - Sous-titre si necessaire
+      - Auteur/Organisation
+      - Date de redaction
+      - Version du document
+    editable_fields:
+      - name: title
+        field_type: text
+        required: true
+      - name: subtitle
+        field_type: text
+        required: false
+      - name: author
+        field_type: text
+        required: true
+      - name: date
+        field_type: text
+        required: true
+
+  - id: toc
+    title: Table des matieres
+    section_type: toc
+    description: Sommaire auto-genere
+    optional: true
+    order: 3
+
+  - id: executive_summary
+    title: Resume executif
+    section_type: text
+    description: Points cles et conclusions principales (1 page max)
+    optional: false
+    order: 4
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Le resume executif doit permettre a un lecteur presse de comprendre l'essentiel.
+      Structure:
+      1. Contexte (2-3 phrases)
+      2. Objectif du document (1 phrase)
+      3. Principales conclusions (3-5 bullet points)
+      4. Recommandations cles (2-3 bullet points)
+      
+      REGLES:
+      - Maximum 1 page
+      - Pas de jargon technique
+      - Chiffres cles mis en evidence
+      - Redige en DERNIER (apres tout le reste)
+    editable_fields:
+      - name: key_points
+        field_type: multiline
+        required: true
+
+  - id: introduction
+    title: Introduction
+    section_type: text
+    description: Contexte, objectifs et methodologie
+    optional: false
+    order: 5
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      L'introduction pose le cadre du document.
+    subsections:
+      - id: intro_context
+        title: Contexte
+        section_type: text
+        order: 1
+        content_hint: |
+          Expliquer:
+          - Pourquoi ce sujet est important/d'actualite
+          - Quel probleme ou question est adresse
+          - Pour qui ce document est destine
+      - id: intro_objectives
+        title: Objectifs
+        section_type: text
+        order: 2
+        content_hint: |
+          Lister clairement:
+          - L'objectif principal du document
+          - Les questions auxquelles il repond
+          - Ce qui est HORS du scope
+      - id: intro_methodology
+        title: Methodologie
+        section_type: text
+        optional: true
+        order: 3
+        content_hint: |
+          Decrire:
+          - Comment les informations ont ete collectees
+          - Quelles sources ont ete utilisees
+          - Quelle periode est couverte
+          - Limites de l'analyse
+
+  - id: main_content
+    title: Analyse detaillee
+    section_type: text
+    description: Corps principal du rapport
+    optional: false
+    order: 6
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      C'est le coeur du document. Structure selon le sujet:
+      
+      Pour une ETUDE DE MARCHE:
+      1. Taille et croissance du marche
+      2. Acteurs principaux
+      3. Tendances
+      4. Opportunites et menaces
+      
+      Pour une ANALYSE TECHNIQUE:
+      1. Etat de l'art
+      2. Comparaison des solutions
+      3. Avantages/inconvenients
+      4. Cas d'usage
+      
+      Pour un BENCHMARK:
+      1. Criteres de comparaison
+      2. Analyse de chaque option
+      3. Tableau comparatif
+      4. Recommandation
+      
+      REGLES:
+      - Chaque affirmation doit etre sourcee
+      - Utiliser des sous-sections claires
+      - Inclure des exemples concrets
+      - Ajouter des visuels quand pertinent
+
+  - id: data_visualization
+    title: Donnees et visualisations
+    section_type: chart
+    description: Graphiques, tableaux, schemas
+    optional: false
+    order: 7
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Les visuels rendent les donnees comprehensibles.
+      
+      Pour chaque visuel:
+      1. Choisir le type adapte:
+         - Courbes: evolution temporelle
+         - Barres: comparaison
+         - Camembert: repartition (max 5-6 parts)
+         - Tableau: donnees detaillees
+      2. Titre clair et descriptif
+      3. Legendes lisibles
+      4. Source des donnees
+      5. Commentaire explicatif
+      
+      CREER les visuels avec:
+      - Python matplotlib/seaborn
+      - Ou tableaux ASCII/Markdown
+    subsections:
+      - id: charts
+        title: Graphiques
+        section_type: chart
+        order: 1
+        content_hint: |
+          Creer au moins 2-3 graphiques pertinents.
+          Sauvegarder en PNG et inclure dans le document.
+      - id: tables
+        title: Tableaux de donnees
+        section_type: table
+        order: 2
+        content_hint: |
+          Tableaux pour les donnees detaillees.
+          Format Markdown pour integration facile.
+
+  - id: analysis_synthesis
+    title: Synthese et interpretation
+    section_type: text
+    description: Ce que signifient les donnees
+    optional: false
+    order: 8
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Apres avoir presente les faits, les INTERPRETER:
+      1. Quelles tendances se degagent?
+      2. Quelles sont les implications?
+      3. Quels sont les risques identifies?
+      4. Quelles opportunites emergent?
+      
+      EVITER:
+      - Repeter les donnees deja presentees
+      - Opinions non etayees
+      - Generalisation abusive
+
+  - id: recommendations
+    title: Recommandations
+    section_type: list
+    description: Actions suggerees basees sur l'analyse
+    optional: false
+    order: 9
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Chaque recommandation doit etre:
+      - CONCRETE: action specifique
+      - JUSTIFIEE: basee sur l'analyse
+      - ACTIONNABLE: qui, quoi, quand
+      - PRIORISEE: ordre d'importance
+      
+      Format:
+      1. [PRIORITE HAUTE] Recommandation - Justification
+      2. [PRIORITE MOYENNE] Recommandation - Justification
+      ...
+
+  - id: conclusion
+    title: Conclusion
+    section_type: text
+    description: Synthese finale et perspectives
+    optional: false
+    order: 10
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      La conclusion:
+      1. Rappelle l'objectif initial
+      2. Resume les principales decouvertes
+      3. Confirme/infirme les hypotheses
+      4. Ouvre sur les perspectives futures
+      
+      NE PAS introduire de nouvelles informations.
+
+  - id: sources
+    title: Sources et references
+    section_type: list
+    description: Toutes les sources utilisees
+    optional: false
+    order: 11
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Lister TOUTES les sources utilisees:
+      - Format: [Numero] Auteur, "Titre", Source, Date, URL
+      - Grouper par type (web, rapports, articles)
+      - Verifier que chaque source citee dans le texte est listee
+
+  - id: appendix
+    title: Annexes
+    section_type: text
+    description: Donnees brutes, methodologie detaillee
+    optional: true
+    order: 12
+    content_hint: |
+      Inclure en annexe:
+      - Donnees brutes completes
+      - Methodologie detaillee
+      - Questionnaires utilises
+      - Calculs detailles
+
+tools_allowed:
+  - web_search
+  - news_search
+  - fetch_webpage
+  - write_file
+  - execute_command
+  - read_file
+
+quality_gates:
+  - Chaque affirmation factuelle est sourcee
+  - Au moins 5 sources differentes utilisees
+  - Donnees chiffrees verifiables
+  - Visuels pertinents inclus
+  - Structure logique introduction -> analyse -> conclusion
+  - Recommandations concretes et actionnables
+  - Resume executif synthetique
+
+output_formats:
+  - pdf
+  - markdown
+  - docx
+
+examples:
+  - Cree un rapport sur les tendances du marche IA en 2024
+  - Fais un document d'analyse des ventes Q1
+  - Redige une etude comparative des frameworks JavaScript
+  - Analyse les solutions cloud pour PME
+  - Benchmark des outils de gestion de projet

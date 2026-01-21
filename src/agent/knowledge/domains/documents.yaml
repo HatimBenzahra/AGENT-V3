@@ -1,0 +1,306 @@
+category: documents
+
+recipes:
+  - title: "Créer un PDF avec LaTeX"
+    question: "Comment créer un document PDF bien formaté?"
+    answer: |
+      Pour créer un PDF professionnel avec LaTeX:
+      
+      1. Créer un fichier .tex avec la structure:
+         \documentclass[12pt,a4paper]{article}
+         \usepackage[utf8]{inputenc}
+         \usepackage[T1]{fontenc}
+         \usepackage[french]{babel}
+         \usepackage{geometry}
+         \geometry{margin=2.5cm}
+         
+         \title{Titre}
+         \author{Auteur}
+         \date{\today}
+         
+         \begin{document}
+         \maketitle
+         \tableofcontents
+         \newpage
+         
+         \section{Introduction}
+         Contenu...
+         
+         \end{document}
+      
+      2. Compiler avec: pdflatex document.tex
+      3. Exécuter 2 fois pour la table des matières
+    tags:
+      - latex
+      - pdf
+      - document
+      - rapport
+    tools_used:
+      - write_file
+      - terminal
+    difficulty: medium
+
+  - title: "Créer un rapport technique LaTeX"
+    question: "Comment structurer un rapport technique ou académique?"
+    answer: |
+      Structure recommandée pour un rapport technique:
+      
+      \documentclass[12pt,a4paper]{report}
+      \usepackage[utf8]{inputenc}
+      \usepackage[T1]{fontenc}
+      \usepackage[french]{babel}
+      \usepackage{graphicx}
+      \usepackage{listings}
+      \usepackage{hyperref}
+      \usepackage{amsmath,amssymb}
+      
+      \begin{document}
+      
+      % Page de titre
+      \begin{titlepage}
+      \centering
+      {\Large\textbf{Titre du Rapport}}\\[2cm]
+      {\large Auteur}\\[1cm]
+      {\large \today}
+      \end{titlepage}
+      
+      \tableofcontents
+      \listoffigures
+      \listoftables
+      
+      \chapter{Introduction}
+      \chapter{État de l'art}
+      \chapter{Méthodologie}
+      \chapter{Implémentation}
+      \chapter{Résultats}
+      \chapter{Conclusion}
+      
+      \bibliographystyle{plain}
+      \bibliography{references}
+      
+      \appendix
+      \chapter{Annexes}
+      
+      \end{document}
+    tags:
+      - latex
+      - rapport
+      - académique
+      - technique
+    tools_used:
+      - write_file
+      - terminal
+    difficulty: medium
+
+  - title: "Inclure du code source dans LaTeX"
+    question: "Comment afficher du code source dans un document LaTeX?"
+    answer: |
+      Utiliser le package listings:
+      
+      \usepackage{listings}
+      \usepackage{xcolor}
+      
+      \definecolor{codegreen}{rgb}{0,0.6,0}
+      \definecolor{codegray}{rgb}{0.5,0.5,0.5}
+      
+      \lstset{
+        backgroundcolor=\color{white},
+        basicstyle=\ttfamily\small,
+        keywordstyle=\color{blue},
+        commentstyle=\color{codegreen},
+        stringstyle=\color{red},
+        numbers=left,
+        numberstyle=\tiny\color{codegray},
+        frame=single,
+        breaklines=true,
+        captionpos=b
+      }
+      
+      % Dans le document:
+      \begin{lstlisting}[language=C, caption=Mon code]
+      int main() {
+          printf("Hello World");
+          return 0;
+      }
+      \end{lstlisting}
+      
+      % Ou depuis un fichier:
+      \lstinputlisting[language=C, caption=main.c]{main.c}
+    tags:
+      - latex
+      - code
+      - listings
+    tools_used:
+      - write_file
+    difficulty: easy
+
+  - title: "Créer un document Markdown"
+    question: "Comment structurer un document Markdown?"
+    answer: |
+      Structure Markdown standard:
+      
+      # Titre Principal
+      
+      ## Section 1
+      
+      Texte avec **gras** et *italique*.
+      
+      ### Sous-section
+      
+      - Liste à puces
+      - Autre élément
+      
+      1. Liste numérotée
+      2. Deuxième élément
+      
+      ```python
+      # Bloc de code
+      def hello():
+          print("Hello")
+      ```
+      
+      | Col1 | Col2 |
+      |------|------|
+      | A    | B    |
+      
+      > Citation
+      
+      [Lien](https://example.com)
+      
+      ![Image](image.png)
+      
+      ---
+      
+      Note de bas de page[^1]
+      
+      [^1]: Contenu de la note
+    tags:
+      - markdown
+      - documentation
+    tools_used:
+      - write_file
+    difficulty: easy
+
+  - title: "Convertir Markdown en PDF"
+    question: "Comment convertir un fichier Markdown en PDF?"
+    answer: |
+      Utiliser Pandoc pour la conversion:
+      
+      # Conversion simple:
+      pandoc document.md -o document.pdf
+      
+      # Avec style personnalisé:
+      pandoc document.md -o document.pdf \
+        --pdf-engine=pdflatex \
+        -V geometry:margin=2.5cm \
+        -V fontsize=12pt \
+        --toc
+      
+      # Avec template LaTeX:
+      pandoc document.md -o document.pdf \
+        --template=template.tex \
+        --highlight-style=tango
+      
+      # Alternative avec weasyprint (HTML->PDF):
+      pandoc document.md -o document.html
+      weasyprint document.html document.pdf
+    tags:
+      - markdown
+      - pdf
+      - pandoc
+      - conversion
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "Ajouter des images dans LaTeX"
+    question: "Comment inclure des images dans un document LaTeX?"
+    answer: |
+      Utiliser le package graphicx:
+      
+      \usepackage{graphicx}
+      \graphicspath{{images/}}  % Dossier des images
+      
+      % Image simple:
+      \includegraphics{image.png}
+      
+      % Avec taille:
+      \includegraphics[width=0.8\textwidth]{image.png}
+      \includegraphics[scale=0.5]{image.png}
+      \includegraphics[height=5cm]{image.png}
+      
+      % Figure avec légende:
+      \begin{figure}[htbp]
+        \centering
+        \includegraphics[width=0.7\textwidth]{image.png}
+        \caption{Description de l'image}
+        \label{fig:mon_image}
+      \end{figure}
+      
+      % Référence: voir Figure \ref{fig:mon_image}
+      
+      % Côte à côte:
+      \begin{figure}[htbp]
+        \centering
+        \begin{minipage}{0.45\textwidth}
+          \includegraphics[width=\textwidth]{img1.png}
+          \caption{Image 1}
+        \end{minipage}
+        \hfill
+        \begin{minipage}{0.45\textwidth}
+          \includegraphics[width=\textwidth]{img2.png}
+          \caption{Image 2}
+        \end{minipage}
+      \end{figure}
+    tags:
+      - latex
+      - images
+      - figures
+    tools_used:
+      - write_file
+    difficulty: easy
+
+  - title: "Formules mathématiques en LaTeX"
+    question: "Comment écrire des formules mathématiques en LaTeX?"
+    answer: |
+      Packages nécessaires:
+      \usepackage{amsmath,amssymb,amsthm}
+      
+      % Formule inline: $E = mc^2$
+      
+      % Formule centrée:
+      \[ E = mc^2 \]
+      
+      % Equation numérotée:
+      \begin{equation}
+        f(x) = \int_0^x g(t)\,dt
+        \label{eq:integrale}
+      \end{equation}
+      
+      % Symboles courants:
+      \alpha, \beta, \gamma, \delta
+      \sum_{i=1}^n, \prod_{i=1}^n
+      \frac{a}{b}, \sqrt{x}, \sqrt[n]{x}
+      \lim_{x \to \infty}, \int_a^b
+      \partial, \nabla, \infty
+      \leq, \geq, \neq, \approx
+      \in, \notin, \subset, \cup, \cap
+      
+      % Matrices:
+      \begin{pmatrix}
+        a & b \\
+        c & d
+      \end{pmatrix}
+      
+      % Système d'équations:
+      \begin{cases}
+        x + y = 1 \\
+        x - y = 0
+      \end{cases}
+    tags:
+      - latex
+      - math
+      - formules
+    tools_used:
+      - write_file
+    difficulty: medium

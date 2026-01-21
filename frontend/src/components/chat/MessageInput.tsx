@@ -18,7 +18,12 @@ interface MessageInputProps {
   disabled: boolean;
 }
 
-export function MessageInput({ onSend, onInterrupt, isProcessing, disabled }: MessageInputProps) {
+export function MessageInput({
+  onSend,
+  onInterrupt,
+  isProcessing,
+  disabled,
+}: MessageInputProps) {
   const [input, setInput] = useState('');
 
   const handleSend = () => {
@@ -35,6 +40,8 @@ export function MessageInput({ onSend, onInterrupt, isProcessing, disabled }: Me
     }
   };
 
+  const placeholder = disabled ? 'Connecting...' : 'Ask me anything...';
+
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
       <TextField
@@ -44,7 +51,7 @@ export function MessageInput({ onSend, onInterrupt, isProcessing, disabled }: Me
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={disabled ? 'Connecting...' : 'Ask me anything...'}
+        placeholder={placeholder}
         disabled={disabled || isProcessing}
         variant="outlined"
         size="small"

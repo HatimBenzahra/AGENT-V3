@@ -1,0 +1,330 @@
+id: playbook_code
+name: Code Project
+deliverable_type: code
+triggers:
+  - code
+  - script
+  - programme
+  - program
+  - implementation
+  - fonction
+  - function
+  - algorithme
+  - algorithm
+  - api
+  - backend
+  - library
+  - module
+  - systeme
+  - system
+  - ingenierie
+  - engineering
+  - projet technique
+  - technical project
+
+default_sections:
+  - id: requirements_analysis
+    title: Analyse des besoins
+    section_type: text
+    description: Comprendre et documenter les exigences du projet
+    optional: false
+    order: 1
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      1. Lire attentivement la demande de l'utilisateur
+      2. Identifier les fonctionnalités requises (MUST HAVE vs NICE TO HAVE)
+      3. Identifier les contraintes techniques (langage, performance, compatibilité)
+      4. Identifier les entrées/sorties attendues
+      5. Créer un fichier REQUIREMENTS.md avec:
+         - Objectif du projet
+         - Fonctionnalités principales
+         - Contraintes techniques
+         - Critères de succès
+    editable_fields:
+      - name: project_goal
+        field_type: multiline
+        required: true
+      - name: constraints
+        field_type: multiline
+        required: false
+
+  - id: architecture_design
+    title: Conception de l'architecture
+    section_type: code
+    description: Definir la structure et les composants du systeme
+    optional: false
+    order: 2
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      1. Decomposer le probleme en sous-problemes independants
+      2. Identifier les modules/classes necessaires
+      3. Definir les interfaces entre modules
+      4. Creer un fichier ARCHITECTURE.md avec:
+         - Diagramme ASCII de l'architecture
+         - Description de chaque module
+         - Flux de donnees
+         - Dependances entre modules
+      5. Choisir les patterns de conception appropries
+    subsections:
+      - id: module_decomposition
+        title: Decomposition modulaire
+        section_type: text
+        description: Liste des modules et leurs responsabilites
+        order: 1
+        content_hint: |
+          Pour chaque module, definir:
+          - Nom et responsabilite unique (Single Responsibility)
+          - Entrees attendues
+          - Sorties produites
+          - Dependances
+      - id: interfaces
+        title: Interfaces et contrats
+        section_type: code
+        description: Definition des interfaces entre modules
+        order: 2
+        content_hint: |
+          Creer les fichiers d'interface/headers avec:
+          - Signatures des fonctions publiques
+          - Types de donnees
+          - Documentation des parametres
+
+  - id: project_structure
+    title: Structure du projet
+    section_type: code
+    description: Organisation des fichiers et dossiers
+    optional: false
+    order: 3
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Creer l'arborescence complete du projet:
+      
+      Pour Python:
+      project/
+      ├── src/
+      │   ├── __init__.py
+      │   ├── main.py
+      │   ├── core/           # Logique metier
+      │   ├── utils/          # Utilitaires
+      │   └── models/         # Structures de donnees
+      ├── tests/
+      │   ├── __init__.py
+      │   ├── test_core.py
+      │   └── test_utils.py
+      ├── docs/
+      ├── requirements.txt
+      ├── setup.py
+      └── README.md
+      
+      Pour C/C++:
+      project/
+      ├── src/
+      │   ├── main.c
+      │   └── modules/
+      ├── include/
+      │   └── *.h
+      ├── tests/
+      ├── lib/
+      ├── Makefile
+      └── README.md
+    editable_fields:
+      - name: root_folder
+        field_type: text
+        default: project
+        required: true
+      - name: language
+        field_type: select
+        options: [python, javascript, typescript, c, cpp, java, go, rust]
+        required: true
+
+  - id: core_implementation
+    title: Implementation du coeur
+    section_type: code
+    description: Code des fonctionnalites principales
+    optional: false
+    order: 4
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      1. Implementer UN module a la fois, dans l'ordre des dependances
+      2. Pour chaque module:
+         a. Creer le fichier avec le header/docstring
+         b. Implementer les fonctions une par une
+         c. Ajouter la gestion d'erreurs
+         d. Ajouter les logs/debug si necessaire
+         e. Tester manuellement avant de passer au suivant
+      3. Utiliser des noms de variables/fonctions explicites
+      4. Commenter le code complexe
+      5. Respecter les conventions du langage (PEP8, etc.)
+    subsections:
+      - id: data_structures
+        title: Structures de donnees
+        section_type: code
+        description: Classes, structs, types personnalises
+        order: 1
+        content_hint: |
+          Definir les structures AVANT la logique:
+          - Classes/structs pour les entites du domaine
+          - Enums pour les etats/types
+          - Types personnalises si necessaire
+      - id: core_logic
+        title: Logique metier principale
+        section_type: code
+        description: Algorithmes et traitements principaux
+        order: 2
+        content_hint: |
+          Implementer la logique dans cet ordre:
+          1. Fonctions de bas niveau (utilitaires)
+          2. Fonctions de niveau intermediaire
+          3. Fonctions de haut niveau (orchestration)
+          Chaque fonction doit:
+          - Avoir une seule responsabilite
+          - Valider ses entrees
+          - Gerer les erreurs proprement
+          - Retourner des valeurs coherentes
+      - id: io_handling
+        title: Gestion des entrees/sorties
+        section_type: code
+        description: Lecture/ecriture fichiers, API, CLI
+        order: 3
+        content_hint: |
+          Gerer les I/O separement de la logique:
+          - Parsing des arguments CLI
+          - Lecture/ecriture de fichiers
+          - Serialisation/deserialisation
+          - Affichage des resultats
+
+  - id: error_handling
+    title: Gestion des erreurs
+    section_type: code
+    description: Exceptions, codes d'erreur, validation
+    optional: false
+    order: 5
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      1. Identifier tous les points de failure possibles
+      2. Creer des exceptions/codes d'erreur personnalises
+      3. Ajouter la validation des entrees
+      4. Implementer des messages d'erreur clairs
+      5. Ne JAMAIS ignorer une erreur silencieusement
+      
+      Pattern a suivre:
+      - Valider les entrees au debut de chaque fonction
+      - Utiliser try/except (ou equivalent) pour les operations risquees
+      - Logger les erreurs avec contexte
+      - Propager ou gerer selon le cas
+
+  - id: tests
+    title: Tests
+    section_type: code
+    description: Tests unitaires et d'integration
+    optional: false
+    order: 6
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      1. Creer des tests POUR CHAQUE fonction publique
+      2. Tester les cas normaux ET les cas d'erreur
+      3. Utiliser le framework de test standard du langage
+      4. Structure des tests:
+         - test_<module>_<fonction>_<cas>
+         - Arrange: preparer les donnees
+         - Act: appeler la fonction
+         - Assert: verifier le resultat
+    subsections:
+      - id: unit_tests
+        title: Tests unitaires
+        section_type: code
+        description: Tests de chaque fonction isolee
+        order: 1
+        content_hint: |
+          Pour chaque fonction, tester:
+          - Cas nominal (entree valide -> sortie attendue)
+          - Cas limites (valeurs min/max, listes vides)
+          - Cas d'erreur (entrees invalides)
+      - id: integration_tests
+        title: Tests d'integration
+        section_type: code
+        description: Tests du systeme complet
+        optional: true
+        order: 2
+        content_hint: |
+          Tester les scenarios complets:
+          - Workflow principal de bout en bout
+          - Interactions entre modules
+          - Performance si critique
+
+  - id: documentation
+    title: Documentation
+    section_type: text
+    description: README, commentaires, docs API
+    optional: false
+    order: 7
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      Creer une documentation complete:
+      
+      README.md doit contenir:
+      1. Titre et description courte
+      2. Installation (dependances, commandes)
+      3. Utilisation (exemples concrets)
+      4. Structure du projet
+      5. API/fonctions principales
+      6. Tests (comment les lancer)
+      7. Licence
+    subsections:
+      - id: readme
+        title: README.md
+        section_type: text
+        order: 1
+      - id: api_docs
+        title: Documentation API
+        section_type: text
+        optional: true
+        order: 2
+        content_hint: |
+          Documenter chaque fonction publique:
+          - Description
+          - Parametres (types, description)
+          - Valeur de retour
+          - Exceptions possibles
+          - Exemple d'utilisation
+
+  - id: build_and_run
+    title: Build et execution
+    section_type: code
+    description: Scripts de build, configuration, execution
+    optional: false
+    order: 8
+    content_hint: |
+      INSTRUCTIONS POUR L'AGENT:
+      1. Creer les fichiers de configuration:
+         - Python: requirements.txt, setup.py
+         - C/C++: Makefile ou CMakeLists.txt
+         - JS: package.json
+      2. Creer un script de build si necessaire
+      3. TESTER que le projet compile/s'execute
+      4. Documenter les commandes dans le README
+
+tools_allowed:
+  - write_file
+  - read_file
+  - execute_command
+  - list_directory
+  - web_search
+
+quality_gates:
+  - Code compile/execute sans erreurs
+  - Tous les tests passent
+  - Documentation complete (README avec installation et usage)
+  - Gestion des erreurs implementee
+  - Code structure en modules independants
+  - Nommage clair et coherent
+
+output_formats:
+  - folder
+  - zip
+
+examples:
+  - Implemente un algorithme de tri en C avec tests
+  - Cree une API REST en Python avec Flask
+  - Developpe un parseur JSON en JavaScript
+  - Cree un systeme de gestion de fichiers en C++
+  - Implemente un simulateur de circuit electrique

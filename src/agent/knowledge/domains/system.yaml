@@ -1,0 +1,276 @@
+category: system
+
+recipes:
+  - title: "Créer une archive ZIP"
+    question: "Comment créer et extraire des archives ZIP?"
+    answer: |
+      Opérations sur archives:
+      
+      # ZIP
+      zip archive.zip file1.txt file2.txt     # Créer
+      zip -r archive.zip dossier/             # Avec dossier
+      unzip archive.zip                        # Extraire
+      unzip archive.zip -d destination/        # Vers dossier
+      unzip -l archive.zip                     # Lister contenu
+      
+      # TAR
+      tar -cvf archive.tar dossier/           # Créer
+      tar -xvf archive.tar                     # Extraire
+      tar -tvf archive.tar                     # Lister
+      
+      # TAR.GZ (GZIP)
+      tar -czvf archive.tar.gz dossier/       # Créer compressé
+      tar -xzvf archive.tar.gz                 # Extraire
+      
+      # TAR.BZ2 (meilleure compression)
+      tar -cjvf archive.tar.bz2 dossier/
+      tar -xjvf archive.tar.bz2
+      
+      # Python
+      import zipfile
+      import shutil
+      
+      # Créer ZIP
+      shutil.make_archive('archive', 'zip', 'dossier/')
+      
+      # Extraire ZIP
+      with zipfile.ZipFile('archive.zip', 'r') as zip_ref:
+          zip_ref.extractall('destination/')
+    tags:
+      - zip
+      - tar
+      - archive
+      - compression
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "Manipulation d'images en ligne de commande"
+    question: "Comment manipuler des images avec ImageMagick?"
+    answer: |
+      ImageMagick (commande convert/magick):
+      
+      # Redimensionner
+      convert input.jpg -resize 800x600 output.jpg
+      convert input.jpg -resize 50% output.jpg
+      convert input.jpg -resize 800x600! output.jpg  # Force dimensions
+      
+      # Convertir format
+      convert image.png image.jpg
+      convert image.jpg image.webp
+      
+      # Qualité (JPEG)
+      convert input.jpg -quality 85 output.jpg
+      
+      # Rogner
+      convert input.jpg -crop 400x300+100+50 output.jpg
+      
+      # Rotation
+      convert input.jpg -rotate 90 output.jpg
+      
+      # Niveaux de gris
+      convert input.jpg -colorspace Gray output.jpg
+      
+      # Traitement par lot
+      for f in *.jpg; do
+        convert "$f" -resize 800x600 "resized_$f"
+      done
+      
+      # Créer PDF à partir d'images
+      convert *.jpg output.pdf
+      
+      # Créer GIF animé
+      convert -delay 100 -loop 0 *.png animation.gif
+    tags:
+      - images
+      - imagemagick
+      - conversion
+      - redimensionnement
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "Rechercher des fichiers"
+    question: "Comment rechercher des fichiers sur le système?"
+    answer: |
+      Commande find:
+      
+      # Par nom
+      find . -name "*.txt"                    # Extension
+      find . -name "config*"                  # Commence par
+      find . -iname "*.TXT"                   # Insensible casse
+      
+      # Par type
+      find . -type f                          # Fichiers
+      find . -type d                          # Dossiers
+      find . -type l                          # Liens
+      
+      # Par taille
+      find . -size +10M                       # Plus de 10 MB
+      find . -size -1k                        # Moins de 1 KB
+      
+      # Par date
+      find . -mtime -7                        # Modifié < 7 jours
+      find . -mtime +30                       # Modifié > 30 jours
+      find . -newer reference.txt             # Plus récent que
+      
+      # Avec action
+      find . -name "*.tmp" -delete            # Supprimer
+      find . -name "*.sh" -exec chmod +x {} \;  # Exécuter
+      find . -type f -exec grep -l "pattern" {} \;
+      
+      # Exclure dossiers
+      find . -name "*.py" -not -path "./venv/*"
+      
+      # Combiner
+      find . -type f -name "*.log" -size +1M -mtime +7
+      
+      # Grep pour contenu
+      grep -r "pattern" .                     # Récursif
+      grep -rn "pattern" .                    # Avec numéros de ligne
+      grep -rl "pattern" . --include="*.py"  # Filtrer fichiers
+    tags:
+      - find
+      - recherche
+      - fichiers
+      - grep
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "Permissions de fichiers Unix"
+    question: "Comment gérer les permissions de fichiers?"
+    answer: |
+      Permissions Unix:
+      
+      # Format: rwxrwxrwx (user, group, others)
+      # r=read(4), w=write(2), x=execute(1)
+      
+      # Voir permissions
+      ls -la
+      
+      # Modifier avec chmod
+      chmod 755 script.sh       # rwxr-xr-x (user: all, others: r+x)
+      chmod 644 file.txt        # rw-r--r-- (user: rw, others: r)
+      chmod 700 private/        # rwx------ (user only)
+      
+      # Format symbolique
+      chmod +x script.sh        # Ajouter exécution
+      chmod -w file.txt         # Retirer écriture
+      chmod u+x script.sh       # Exécution pour user
+      chmod go-rwx private/     # Rien pour group/others
+      
+      # Récursif
+      chmod -R 755 dossier/
+      
+      # Changer propriétaire
+      chown user:group file.txt
+      chown -R user:group dossier/
+      
+      # Permissions courantes:
+      # 755 - Scripts exécutables, dossiers
+      # 644 - Fichiers normaux
+      # 600 - Fichiers sensibles (clés SSH, etc.)
+      # 700 - Dossiers privés
+    tags:
+      - permissions
+      - chmod
+      - chown
+      - unix
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "Gestion des processus"
+    question: "Comment gérer les processus en ligne de commande?"
+    answer: |
+      Gestion des processus:
+      
+      # Voir les processus
+      ps aux                    # Tous les processus
+      ps aux | grep python      # Filtrer
+      top                       # Temps réel
+      htop                      # Amélioré (si installé)
+      
+      # Tuer un processus
+      kill PID                  # Signal TERM
+      kill -9 PID               # Signal KILL (forcé)
+      killall python            # Par nom
+      pkill -f "python script"  # Par pattern
+      
+      # Processus en arrière-plan
+      ./script.sh &             # Lancer en background
+      nohup ./script.sh &       # Survit à la déconnexion
+      jobs                      # Lister jobs
+      fg %1                     # Ramener au premier plan
+      bg %1                     # Mettre en arrière-plan
+      Ctrl+Z                    # Suspendre processus
+      
+      # Ports utilisés
+      lsof -i :8080             # Qui utilise le port
+      netstat -tulpn            # Tous les ports
+      ss -tulpn                 # Alternative moderne
+      
+      # Ressources
+      free -h                   # Mémoire
+      df -h                     # Disque
+      du -sh dossier/           # Taille dossier
+    tags:
+      - processus
+      - kill
+      - ps
+      - ports
+    tools_used:
+      - terminal
+    difficulty: easy
+
+  - title: "SSH et connexions distantes"
+    question: "Comment utiliser SSH pour se connecter à des serveurs?"
+    answer: |
+      Commandes SSH:
+      
+      # Connexion basique
+      ssh user@server.com
+      ssh -p 2222 user@server.com    # Port personnalisé
+      
+      # Avec clé SSH
+      ssh -i ~/.ssh/mykey.pem user@server.com
+      
+      # Générer une clé
+      ssh-keygen -t ed25519 -C "email@example.com"
+      # Ou RSA: ssh-keygen -t rsa -b 4096
+      
+      # Copier clé publique
+      ssh-copy-id user@server.com
+      # Ou manuellement: cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys
+      
+      # Config SSH (~/.ssh/config)
+      Host myserver
+          HostName server.example.com
+          User admin
+          Port 22
+          IdentityFile ~/.ssh/mykey
+      # Puis: ssh myserver
+      
+      # Copier fichiers (SCP)
+      scp file.txt user@server:/path/
+      scp -r dossier/ user@server:/path/
+      scp user@server:/path/file.txt ./
+      
+      # Tunnel SSH
+      ssh -L 8080:localhost:80 user@server  # Local -> Remote
+      ssh -R 8080:localhost:80 user@server  # Remote -> Local
+      
+      # SFTP
+      sftp user@server
+      > get file.txt
+      > put local.txt
+      > ls, cd, mkdir, rm...
+    tags:
+      - ssh
+      - scp
+      - connexion
+      - serveur
+    tools_used:
+      - terminal
+    difficulty: medium
